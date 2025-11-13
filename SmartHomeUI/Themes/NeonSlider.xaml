@@ -1,0 +1,214 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Accent for sliders (exact spec color) -->
+    <SolidColorBrush x:Key="NeonSliderAccentBrush" Color="#12E6D9"/>
+
+    <!-- Global Slider style with custom ControlTemplate -->
+    <Style TargetType="Slider">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Grid x:Name="Root" Background="Transparent" SnapsToDevicePixels="True">
+                        <Track x:Name="PART_Track"
+                               Orientation="{TemplateBinding Orientation}"
+                               Minimum="{TemplateBinding Minimum}"
+                               Maximum="{TemplateBinding Maximum}"
+                               Value="{TemplateBinding Value}"
+                               IsDirectionReversed="{TemplateBinding IsDirectionReversed}"
+                               Focusable="False">
+
+                            <!-- Active section (Value before) -->
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton x:Name="PART_DecreaseButton"
+                                              Command="{x:Static Slider.DecreaseLarge}"
+                                              Background="Transparent"
+                                              BorderThickness="0"
+                                              Focusable="False" IsTabStop="False"
+                                              Tag="{TemplateBinding Orientation}">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Grid Background="Transparent" SnapsToDevicePixels="True">
+                                                <!-- Horizontal line (default) -->
+                                                <Rectangle x:Name="LineH"
+                                                           Height="2"
+                                                           VerticalAlignment="Center"
+                                                           HorizontalAlignment="Stretch"
+                                                           Fill="{StaticResource NeonSliderAccentBrush}">
+                                                    <Rectangle.Effect>
+                                                        <DropShadowEffect Color="#12E6D9"
+                                                                          BlurRadius="8"
+                                                                          ShadowDepth="0"
+                                                                          Opacity="0.7"/>
+                                                    </Rectangle.Effect>
+                                                </Rectangle>
+                                                <!-- Vertical line (for Orientation=Vertical) -->
+                                                <Rectangle x:Name="LineV"
+                                                           Width="2"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Stretch"
+                                                           Fill="{StaticResource NeonSliderAccentBrush}"
+                                                           Visibility="Collapsed">
+                                                    <Rectangle.Effect>
+                                                        <DropShadowEffect Color="#12E6D9"
+                                                                          BlurRadius="8"
+                                                                          ShadowDepth="0"
+                                                                          Opacity="0.7"/>
+                                                    </Rectangle.Effect>
+                                                </Rectangle>
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="Tag" Value="{x:Static Orientation.Vertical}">
+                                                    <Setter TargetName="LineH" Property="Visibility" Value="Collapsed"/>
+                                                    <Setter TargetName="LineV" Property="Visibility" Value="Visible"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.DecreaseRepeatButton>
+
+                            <!-- Inactive section (after Value) -->
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton x:Name="PART_IncreaseButton"
+                                              Command="{x:Static Slider.IncreaseLarge}"
+                                              Background="Transparent"
+                                              BorderThickness="0"
+                                              Focusable="False" IsTabStop="False"
+                                              Tag="{TemplateBinding Orientation}"
+                                              Opacity="0.25">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Grid Background="Transparent" SnapsToDevicePixels="True">
+                                                <!-- Horizontal line (default) -->
+                                                <Rectangle x:Name="LineH"
+                                                           Height="2"
+                                                           VerticalAlignment="Center"
+                                                           HorizontalAlignment="Stretch"
+                                                           Fill="{StaticResource NeonSliderAccentBrush}">
+                                                    <Rectangle.Effect>
+                                                        <DropShadowEffect Color="#12E6D9"
+                                                                          BlurRadius="8"
+                                                                          ShadowDepth="0"
+                                                                          Opacity="0.7"/>
+                                                    </Rectangle.Effect>
+                                                </Rectangle>
+                                                <!-- Vertical line (for Orientation=Vertical) -->
+                                                <Rectangle x:Name="LineV"
+                                                           Width="2"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Stretch"
+                                                           Fill="{StaticResource NeonSliderAccentBrush}"
+                                                           Visibility="Collapsed">
+                                                    <Rectangle.Effect>
+                                                        <DropShadowEffect Color="#12E6D9"
+                                                                          BlurRadius="8"
+                                                                          ShadowDepth="0"
+                                                                          Opacity="0.7"/>
+                                                    </Rectangle.Effect>
+                                                </Rectangle>
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="Tag" Value="{x:Static Orientation.Vertical}">
+                                                    <Setter TargetName="LineH" Property="Visibility" Value="Collapsed"/>
+                                                    <Setter TargetName="LineV" Property="Visibility" Value="Visible"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.IncreaseRepeatButton>
+
+                            <!-- Thumb (circular ring) -->
+                            <Track.Thumb>
+                                <Thumb x:Name="Thumb"
+                                       Width="16" Height="16"
+                                       Focusable="False"
+                                       Background="Transparent"
+                                       BorderBrush="{StaticResource NeonSliderAccentBrush}"
+                                       BorderThickness="2">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Grid x:Name="ThumbRoot"
+                                                  Background="Transparent"
+                                                  RenderTransformOrigin="0.5,0.5"
+                                                  SnapsToDevicePixels="True">
+                                                <Grid.RenderTransform>
+                                                    <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                                </Grid.RenderTransform>
+                                                <Ellipse x:Name="ThumbRing"
+                                                         Width="16" Height="16"
+                                                         Fill="Transparent"
+                                                         Stroke="{TemplateBinding BorderBrush}"
+                                                         StrokeThickness="2">
+                                                    <Ellipse.Style>
+                                                        <Style TargetType="Ellipse">
+                                                            <Setter Property="StrokeThickness" Value="2"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=Slider}}" Value="True">
+                                                                    <Setter Property="StrokeThickness" Value="2.6"/>
+                                                                    <Setter Property="Opacity" Value="1"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Ellipse.Style>
+                                                    <Ellipse.Effect>
+                                                        <DropShadowEffect Color="#12E6D9"
+                                                                          BlurRadius="8"
+                                                                          ShadowDepth="0"
+                                                                          Opacity="0.7"/>
+                                                    </Ellipse.Effect>
+                                                </Ellipse>
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <!-- Hover: slightly stronger glow -->
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ThumbRing" Property="Effect">
+                                                        <Setter.Value>
+                                                            <DropShadowEffect Color="#12E6D9" BlurRadius="10" ShadowDepth="0" Opacity="0.9"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Trigger>
+                                                <!-- Press/drag: slight scale up -->
+                                                <Trigger Property="IsMouseCaptured" Value="True">
+                                                    <Setter TargetName="ThumbRoot" Property="RenderTransform">
+                                                        <Setter.Value>
+                                                            <ScaleTransform ScaleX="1.1" ScaleY="1.1"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Trigger>
+                                                <Trigger Property="IsDragging" Value="True">
+                                                    <Setter TargetName="ThumbRoot" Property="RenderTransform">
+                                                        <Setter.Value>
+                                                            <ScaleTransform ScaleX="1.1" ScaleY="1.1"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <!-- Disabled: dim and ignore mouse -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Root" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                        <!-- Orientation-specific padding to avoid clipping glow -->
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter TargetName="PART_Track" Property="Margin" Value="8,0"/>
+                        </Trigger>
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Setter TargetName="PART_Track" Property="Margin" Value="0,8"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

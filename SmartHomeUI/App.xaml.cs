@@ -1,0 +1,52 @@
+using System.Windows;
+using SmartHomeUI.Data;
+using System;
+using System.IO;
+
+namespace SmartHomeUI;
+
+/// <summary>
+/// Interaction logic for App.xaml
+/// </summary>
+public partial class App : Application
+{
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        // Ensure SQLite database exists
+        using (var db = new SmartHomeDbContext())
+        {
+            db.Database.EnsureCreated();
+        }
+        // Ensure schema compatibility with older DBs (users/devices/automations)
+        SqliteMigrator.EnsureUserColumns();
+        SqliteMigrator.EnsureDeviceColumns();
+        Services.DeviceService.InitializeDispatcher(System.Windows.Threading.Dispatcher.CurrentDispatcher);
+        HookGlobalExceptionHandlers();
+        SmartHomeUI.Services.AutomationService.Start();
+        base.OnStartup(e);
+    }
+
+    private void HookGlobalExceptionHandlers()
+    {
+        this.DispatcherUnhandledException += (s, exArgs) =>
+        {
+            try { File.AppendAllText("error.log", $"[UI] {DateTime.Now}: {exArgs.Exception}\n\n"); } catch { }
+            MessageBox.Show($"Unexpected error:\n{exArgs.Exception.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            exArgs.Handled = true; // keep app alive to diagnose further
+        };
+        AppDomain.CurrentDomain.UnhandledException += (s, exArgs) =>
+        {
+            try { File.AppendAllText("error.log", $"[Domain] {DateTime.Now}: {exArgs.ExceptionObject}\n\n"); } catch { }
+        };
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (s, exArgs) =>
+        {
+            try { File.AppendAllText("error.log", $"[Task] {DateTime.Now}: {exArgs.Exception}\n\n"); } catch { }
+            exArgs.SetObserved();
+        };
+    }
+}
+
+
+
+
+

@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "roslyn-csharp": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--no-build",
+        "--project",
+        "${workspaceFolder}/tools/RoslynMCP/RoslynMCP/RoslynMCP.csproj"
+      ]
+    }
+  }
+}

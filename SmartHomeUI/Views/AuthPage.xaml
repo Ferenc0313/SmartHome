@@ -1,0 +1,67 @@
+<UserControl x:Class="SmartHomeUI.Views.AuthPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="900">
+    <Grid>
+        <!-- Sign In Panel (default) -->
+        <Border x:Name="SignInPanel" Style="{StaticResource GlassPanel}" Margin="10" Padding="20">
+            <StackPanel>
+                <TextBlock Text="Sign In" Style="{StaticResource NeonTitleStyle}"/>
+                <TextBlock Text="Welcome back" Foreground="{StaticResource TextDimmed}" Margin="0,4,0,16"/>
+
+                <TextBlock Text="Username" Style="{StaticResource InputLabelText}"/>
+                <TextBox Style="{StaticResource GlassTextBox}" Text="{Binding LoginName, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <TextBlock Text="Password" Style="{StaticResource InputLabelText}"/>
+                <PasswordBox x:Name="LoginPasswordBox" Style="{StaticResource GlassPasswordBox}" PasswordChanged="LoginPasswordBox_PasswordChanged"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <Button Content="Login" Command="{Binding LoginCommand}" Style="{StaticResource GlassActionButton}" Width="140"/>
+                </StackPanel>
+
+                <TextBlock Margin="0,12,0,0" Foreground="{StaticResource TextDimmed}">
+                    <Run Text="No account? "/>
+                    <Hyperlink Click="OpenRegister_Click">
+                        <Run Text="Create one"/>
+                    </Hyperlink>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Register Panel (hidden until link click) -->
+        <Border x:Name="RegisterPanel" Style="{StaticResource GlassPanel}" Margin="10" Padding="20" Visibility="Collapsed">
+            <StackPanel>
+                <TextBlock Text="Create Account" Style="{StaticResource NeonTitleStyle}"/>
+                <TextBlock Text="Join the hub" Foreground="{StaticResource TextDimmed}" Margin="0,4,0,16"/>
+
+                <TextBlock Text="Username" Style="{StaticResource InputLabelText}"/>
+                <TextBox Style="{StaticResource GlassTextBox}" Text="{Binding RegName, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <TextBlock Text="Email (optional)" Style="{StaticResource InputLabelText}"/>
+                <TextBox Style="{StaticResource GlassTextBox}" Text="{Binding RegEmail, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <TextBlock Text="Password" Style="{StaticResource InputLabelText}"/>
+                <PasswordBox x:Name="RegPasswordBox" Style="{StaticResource GlassPasswordBox}" PasswordChanged="RegPasswordBox_PasswordChanged"/>
+
+                <TextBlock Text="Confirm Password" Style="{StaticResource InputLabelText}"/>
+                <PasswordBox x:Name="RegConfirmBox" Style="{StaticResource GlassPasswordBox}" PasswordChanged="RegConfirmBox_PasswordChanged"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                    <Button Content="Register" Command="{Binding RegisterCommand}" Style="{StaticResource GlassActionButton}" Width="140"/>
+                    <Button Content="Cancel" Style="{StaticResource GlassActionButton}" Width="120" Margin="10,0,0,0" Click="CancelRegister_Click"/>
+                </StackPanel>
+
+                <TextBlock Text="{Binding StatusMessage}" Margin="0,14,0,0" Foreground="{StaticResource NeonCyan}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Snackbar bottom center -->
+        <Border x:Name="Snack" CornerRadius="6" Padding="10,6" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,16"
+                Background="#CC1a1a1a" BorderBrush="{StaticResource NeonCyan}" BorderThickness="1" Opacity="0" Visibility="Collapsed">
+            <TextBlock x:Name="SnackText" Foreground="{StaticResource TextWhite}"/>
+        </Border>
+    </Grid>
+</UserControl>
