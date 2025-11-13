@@ -11,15 +11,20 @@
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
-        WindowStartupLocation="CenterScreen">
-    
-    <!-- Main container with glassmorphism effect -->
-    <Border Style="{StaticResource GlassPanel}" 
-            Background="{StaticResource DarkBackground}"
-            CornerRadius="0">
-        
-        <!-- Two-column layout: Sidebar (left) + Content (right) -->
-        <Grid>
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded">
+
+    <Grid Background="Transparent">
+        <Viewbox Stretch="Uniform" StretchDirection="Both">
+            <!-- Main container with glassmorphism effect -->
+            <Border Width="1600"
+                    Height="900"
+                    Style="{StaticResource GlassPanel}" 
+                    Background="{StaticResource DarkBackground}"
+                    CornerRadius="0">
+                
+                <!-- Two-column layout: Sidebar (left) + Content (right) -->
+                <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280"/>
                 <ColumnDefinition Width="*"/>
@@ -176,10 +181,11 @@
 
             </Grid>
 
-        </Grid>
-        
-    </Border>
+                </Grid>
+                
+            </Border>
+        </Viewbox>
+    </Grid>
 
 </Window>
-
 

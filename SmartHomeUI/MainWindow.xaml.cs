@@ -11,6 +11,9 @@ namespace SmartHomeUI
     /// </summary>
     public partial class MainWindow : Window
     {
+        private const double DesignWidth = 1600;
+        private const double DesignHeight = 900;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -18,6 +21,8 @@ namespace SmartHomeUI
             ShowDashboard();
             RefreshMenuState();
         }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e) => ApplyScaledWindowSize();
 
         private void NavigateToDashboard(object sender, RoutedEventArgs e) => ShowDashboard();
         private void NavigateToUsers(object sender, RoutedEventArgs e) => ShowUsers();
@@ -96,6 +101,19 @@ namespace SmartHomeUI
             {
                 btnAutomations.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private void ApplyScaledWindowSize()
+        {
+            var workArea = SystemParameters.WorkArea;
+            var scale = Math.Min(workArea.Width / DesignWidth, workArea.Height / DesignHeight);
+            scale = Math.Min(scale, 1.0);
+
+            Width = DesignWidth * scale;
+            Height = DesignHeight * scale;
+
+            Left = workArea.Left + (workArea.Width - Width) / 2;
+            Top = workArea.Top + (workArea.Height - Height) / 2;
         }
     }
 }
