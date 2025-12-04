@@ -160,3 +160,8 @@ E:\SZAKDOGa\SmartHomeHUB\SmartHomeUI\obj\Debug\net9.0-windows\Views\DevicesPage.
 E:\SZAKDOGa\SmartHomeHUB\SmartHomeUI\obj\Debug\net9.0-windows\Views\DevicesPage.baml
 E:\SZAKDOGa\SmartHomeHUB\SmartHomeUI\obj\Debug\net9.0-windows\Themes\NeonSlider.baml
 E:\SZAKDOGa\SmartHomeHUB\SmartHomeUI\obj\Debug\net9.0-windows\Themes\NeonComboBox.baml
+E:\SZAKDOGa\SmartHomeHUB\SmartHomeUI\obj\Debug\net9.0-windows\SmartHomeUI.sourcelink.json
+E:\SZAKDOGa\SmartHomeHUB\SmartHomeUI\obj\Debug\net9.0-windows\Views\AddPhysicalDeviceDialog.g.cs
+E:\SZAKDOGa\SmartHomeHUB\SmartHomeUI\obj\Debug\net9.0-windows\Views\AddPhysicalDeviceDialog.baml
+E:\SZAKDOGa\SmartHomeHUB\SmartHomeUI\obj\Debug\net9.0-windows\Views\EnterPatDialog.baml
+E:\SZAKDOGa\SmartHomeHUB\SmartHomeUI\obj\Debug\net9.0-windows\Views\EnterPatDialog.g.cs

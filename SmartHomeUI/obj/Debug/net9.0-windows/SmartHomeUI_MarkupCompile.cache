@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET9_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 E:\SZAKDOGa\SmartHomeHUB\SmartHomeUI\App.xaml
-11556472862
+131508459864
 
-272054837009
+46-568811774
 219-81930175
-MainWindow.xaml;Themes\NeonComboBox.xaml;Themes\NeonSlider.xaml;Themes\NeonTheme.xaml;Views\AccountPage.xaml;Views\AddDeviceDialog.xaml;Views\AuthPage.xaml;Views\AutomationsPage.xaml;Views\DashboardPage.xaml;Views\DevicesPage.xaml;Views\UsersPage.xaml;
+MainWindow.xaml;Themes\NeonComboBox.xaml;Themes\NeonSlider.xaml;Themes\NeonTheme.xaml;Views\AccountPage.xaml;Views\AddDeviceDialog.xaml;Views\AddPhysicalDeviceDialog.xaml;Views\AuthPage.xaml;Views\AutomationsPage.xaml;Views\DashboardPage.xaml;Views\DevicesPage.xaml;Views\EnterPatDialog.xaml;Views\UsersPage.xaml;
 
 False
 

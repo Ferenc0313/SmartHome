@@ -1,4 +1,4 @@
-<UserControl x:Class="SmartHomeUI.Views.DevicesPage"
+﻿<UserControl x:Class="SmartHomeUI.Views.DevicesPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:conv="clr-namespace:SmartHomeUI.Converters"
@@ -8,6 +8,7 @@
              d:DesignHeight="600" d:DesignWidth="900">
     <UserControl.Resources>
         <conv:IconKeyToGlyphConverter x:Key="IconKeyToGlyph"/>
+        <conv:IconKeyToImageSourceConverter x:Key="IconKeyToImageSource"/>
     </UserControl.Resources>
 
     <Border Style="{StaticResource GlassPanel}" Margin="10" Padding="20">
@@ -24,11 +25,13 @@
             <Grid Grid.Row="1" Margin="0,16,0,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="16"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Button Grid.Column="0" Content="Add Device" Width="140" Style="{StaticResource GlassActionButton}" Click="AddDevice_Click"/>
-                <TextBox Grid.Column="2" x:Name="SearchBox" Style="{StaticResource GlassTextBox}" ToolTip="Search by name" TextChanged="SearchBox_TextChanged"/>
+                <Button Grid.Column="1" Content="Add Physical" Width="140" Margin="10,0,0,0" Style="{StaticResource GlassActionButton}" Click="AddPhysical_Click"/>
+                <TextBox Grid.Column="3" x:Name="SearchBox" Style="{StaticResource GlassTextBox}" ToolTip="Search by name" TextChanged="SearchBox_TextChanged"/>
             </Grid>
 
             <!-- List + Details -->
@@ -47,12 +50,47 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{Binding IconKey, Converter={StaticResource IconKeyToGlyph}}" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{StaticResource NeonCyan}" VerticalAlignment="Center"/>
+                                <Grid Grid.Column="0" Width="32" HorizontalAlignment="Center">
+                                    <Image x:Name="DeviceIconImage"
+                                           Width="24"
+                                           Height="24"
+                                           Stretch="Uniform"
+                                           VerticalAlignment="Center"
+                                           Source="{Binding IconKey, Converter={StaticResource IconKeyToImageSource}}">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <Trigger Property="Source" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                    <TextBlock x:Name="DeviceIconGlyph"
+                                               Text="{Binding IconKey, Converter={StaticResource IconKeyToGlyph}}"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="20"
+                                               Foreground="{StaticResource NeonCyan}"
+                                               VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Source, ElementName=DeviceIconImage}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
                                 <StackPanel Grid.Column="1">
                                     <TextBlock Text="{Binding Name}"/>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding Type}" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
-                                        <TextBlock Text="  •  " Foreground="{StaticResource TextDimmed}" FontSize="12"/>
+                                        <TextBlock Text=" | " Foreground="{StaticResource TextDimmed}" FontSize="12"/>
                                         <TextBlock Text="{Binding Room}" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -130,3 +168,10 @@
         </Grid>
     </Border>
 </UserControl>
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic; // retained for List<WidgetKind>, might be global but kept minimal
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -53,6 +53,7 @@ public class DashboardViewModel : INotifyPropertyChanged
     private int _onCount;
     public int OnCount { get => _onCount; private set { _onCount = value; OnPropertyChanged(); } }
 
+
     public ReadOnlyObservableCollection<DeviceService.ActivityEntry> Activity => DeviceService.Activity;
 
     public bool IsWidgetPickerOpen
@@ -80,7 +81,7 @@ public class DashboardViewModel : INotifyPropertyChanged
         EnsureTrailingPlaceholder();
     }
 
-    public void OpenWidgetPicker(AddWidgetPlaceholder placeholder)
+        public void OpenWidgetPicker(AddWidgetPlaceholder placeholder)
     {
         if (!CanAddWidgets) return;
         var index = WidgetTiles.IndexOf(placeholder);
@@ -308,6 +309,8 @@ public class DashboardViewModel : INotifyPropertyChanged
         // Recompute aggregates after updates
         UpdateAggregates();
     }
+
+    
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

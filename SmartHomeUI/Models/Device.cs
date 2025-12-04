@@ -24,6 +24,8 @@ public class Device
     public int Battery { get; set; } = 100;
     public double Value { get; set; }
     public bool Favorite { get; set; }
+    public bool IsPhysical { get; set; }
+    public string PhysicalDeviceId { get; set; } = string.Empty;
     public DateTime? LastSeen { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

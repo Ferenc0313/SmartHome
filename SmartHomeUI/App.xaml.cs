@@ -2,6 +2,9 @@ using System.Windows;
 using SmartHomeUI.Data;
 using System;
 using System.IO;
+using System.Threading;
+using Microsoft.Extensions.Logging.Abstractions;
+using SmartHomeUI.Services;
 
 namespace SmartHomeUI;
 
@@ -10,6 +13,8 @@ namespace SmartHomeUI;
 /// </summary>
 public partial class App : Application
 {
+    private SmartThingsPollingService? _polling;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         // Ensure SQLite database exists
@@ -23,7 +28,18 @@ public partial class App : Application
         Services.DeviceService.InitializeDispatcher(System.Windows.Threading.Dispatcher.CurrentDispatcher);
         HookGlobalExceptionHandlers();
         SmartHomeUI.Services.AutomationService.Start();
+        _polling = new SmartThingsPollingService(new SmartThingsPollingOptions(), NullLogger<SmartThingsPollingService>.Instance);
+        _polling.StartAsync(CancellationToken.None);
         base.OnStartup(e);
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        if (_polling is not null)
+        {
+            _polling.StopAsync().GetAwaiter().GetResult();
+        }
+        base.OnExit(e);
     }
 
     private void HookGlobalExceptionHandlers()

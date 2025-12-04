@@ -11,6 +11,7 @@
           "Microsoft.EntityFrameworkCore": "9.0.0",
           "Microsoft.EntityFrameworkCore.Sqlite": "9.0.0",
           "Microsoft.EntityFrameworkCore.Tools": "9.0.0",
+          "Microsoft.Extensions.Logging.Abstractions": "9.0.0",
           "Microsoft.Xaml.Behaviors.Wpf": "1.1.135"
         },
         "runtime": {

@@ -46,6 +46,7 @@ public static class SqliteMigrator
                 AddCol("IsOnline", "ALTER TABLE {table} ADD COLUMN IsOnline INTEGER NOT NULL DEFAULT 0;" );
                 AddCol("PasswordHash", "ALTER TABLE {table} ADD COLUMN PasswordHash TEXT NOT NULL DEFAULT '';" );
                 AddCol("PasswordSalt", "ALTER TABLE {table} ADD COLUMN PasswordSalt TEXT NOT NULL DEFAULT '';" );
+                AddCol("SmartThingsPatEncrypted", "ALTER TABLE {table} ADD COLUMN SmartThingsPatEncrypted TEXT NULL;" );
             }
         }
         catch
@@ -95,6 +96,8 @@ public static class SqliteMigrator
                 AddCol("Battery", "ALTER TABLE {table} ADD COLUMN Battery INTEGER NOT NULL DEFAULT 100;" );
                 AddCol("Value", "ALTER TABLE {table} ADD COLUMN Value REAL NOT NULL DEFAULT 0;" );
                 AddCol("Favorite", "ALTER TABLE {table} ADD COLUMN Favorite INTEGER NOT NULL DEFAULT 0;" );
+                AddCol("IsPhysical", "ALTER TABLE {table} ADD COLUMN IsPhysical INTEGER NOT NULL DEFAULT 0;" );
+                AddCol("PhysicalDeviceId", "ALTER TABLE {table} ADD COLUMN PhysicalDeviceId TEXT NOT NULL DEFAULT '';" );
                 AddCol("LastSeen", "ALTER TABLE {table} ADD COLUMN LastSeen TEXT NULL;" );
                 AddCol("CreatedAt", "ALTER TABLE {table} ADD COLUMN CreatedAt TEXT NOT NULL DEFAULT (datetime('now'));" );
             }

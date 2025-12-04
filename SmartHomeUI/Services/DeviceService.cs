@@ -80,6 +80,26 @@ public sealed class WidgetCapabilities
         using var db = new SmartHomeDbContext();
         var list = db.Devices.Where(d => d.UserId == _userId.Value).OrderBy(d => d.Name).ToList();
 
+        // Backfill missing icon/type for physical devices
+        bool changed = false;
+        foreach (var d in list)
+        {
+            if (d.IsPhysical)
+            {
+                if (string.IsNullOrWhiteSpace(d.IconKey))
+                {
+                    d.IconKey = ResolveIconFromType(d.Type);
+                    changed = true;
+                }
+                if (string.IsNullOrWhiteSpace(d.Type))
+                {
+                    d.Type = "SmartPlug";
+                    changed = true;
+                }
+            }
+        }
+        if (changed) db.SaveChanges();
+
         _devices.Clear();
         foreach (var d in list) _devices.Add(d);
 
@@ -163,33 +183,55 @@ public sealed class WidgetCapabilities
 
     public static void TogglePersist(int deviceId)
     {
-        bool newState;
-        if (_state.TryGetValue(deviceId, out var s))
+        var dev = _devices.FirstOrDefault(d => d.Id == deviceId);
+        if (dev is null) return;
+
+        var targetState = !dev.IsOn;
+
+        // Physical device -> SmartThings call
+        if (dev.IsPhysical && !string.IsNullOrWhiteSpace(dev.PhysicalDeviceId))
         {
-            s.IsOn = !s.IsOn;
-            s.LastSeen = DateTime.UtcNow;
-            newState = s.IsOn;
-            var devName = _devices.FirstOrDefault(d => d.Id == deviceId)?.Name ?? ("Device " + deviceId);
-            AddActivity($"{devName} turned {(s.IsOn ? "on" : "off")}");
-            RaiseOnUI(StateChanged);
-        }
-        else
-        {
-            // Fall back to DB state if runtime cache not present
-            using var dbRead = new SmartHomeDbContext();
-            var trackedRead = dbRead.Devices.FirstOrDefault(d => d.Id == deviceId);
-            newState = trackedRead is not null ? !trackedRead.IsOn : true;
+            var pat = NormalizePat(AuthService.CurrentSmartThingsPat ?? Environment.GetEnvironmentVariable("SMARTTHINGS_PAT"));
+            if (string.IsNullOrWhiteSpace(pat))
+            {
+                AddActivity("SmartThings token missing. Cannot toggle physical device.");
+                return;
+            }
+
+            var ok = SmartThingsSwitchService.SetSwitchState(pat, dev.PhysicalDeviceId, targetState);
+            if (!ok)
+            {
+                AddActivity($"SmartThings toggle failed for {dev.Name}.");
+                return;
+            }
         }
 
-        using var db = new SmartHomeDbContext();
-        var tracked = db.Devices.FirstOrDefault(d => d.Id == deviceId);
-        if (tracked is not null)
+        if (_state.TryGetValue(deviceId, out var s))
         {
-            tracked.IsOn = newState;
-            tracked.LastSeen = DateTime.UtcNow;
-            db.SaveChanges();
+            s.IsOn = targetState;
+            s.LastSeen = DateTime.UtcNow;
         }
-        RefreshDeviceInCollection(deviceId, d => d.IsOn = newState);
+
+        using (var db = new SmartHomeDbContext())
+        {
+            var tracked = db.Devices.FirstOrDefault(d => d.Id == deviceId);
+            if (tracked is not null)
+            {
+                tracked.IsOn = targetState;
+                tracked.LastSeen = DateTime.UtcNow;
+                db.SaveChanges();
+            }
+        }
+
+        RefreshDeviceInCollection(deviceId, d => d.IsOn = targetState);
+        AddActivity($"{dev.Name} turned {(targetState ? "on" : "off")}");
+        RaiseOnUI(StateChanged);
+    }
+
+    public static string NormalizePat(string? pat)
+    {
+        if (string.IsNullOrWhiteSpace(pat)) return string.Empty;
+        return new string(pat.Where(c => !char.IsWhiteSpace(c)).ToArray());
     }
 
     public static void SetValue(int deviceId, double value)
@@ -260,6 +302,8 @@ public sealed class WidgetCapabilities
                 Battery = dev.Battery,
                 Value = dev.Value,
                 Favorite = dev.Favorite,
+                IsPhysical = dev.IsPhysical,
+                PhysicalDeviceId = dev.PhysicalDeviceId,
                 LastSeen = dev.LastSeen,
                 CreatedAt = dev.CreatedAt,
                 UserId = dev.UserId,
@@ -267,5 +311,44 @@ public sealed class WidgetCapabilities
             };
             _devices[idx] = copy; // force Replace with a new instance so bindings refresh
         }
+    }
+
+    private static string ResolveIconFromType(string? type)
+    {
+        if (string.IsNullOrWhiteSpace(type)) return "E80F";
+        return type.Equals("SmartPlug", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Smart_Plug.png"
+             : type.Equals("SmartBulb", StringComparison.OrdinalIgnoreCase) ? "E7F8"
+             : "E80F";
+    }
+
+    public static void UpdateStateFromExternal(int deviceId, bool isOn)
+    {
+        if (_state.TryGetValue(deviceId, out var s) && s.IsOn == isOn) return;
+
+        if (_state.TryGetValue(deviceId, out var state))
+        {
+            state.IsOn = isOn;
+            state.LastSeen = DateTime.UtcNow;
+        }
+
+        using (var db = new SmartHomeDbContext())
+        {
+            var tracked = db.Devices.FirstOrDefault(d => d.Id == deviceId);
+            if (tracked is not null)
+            {
+                tracked.IsOn = isOn;
+                tracked.LastSeen = DateTime.UtcNow;
+                db.SaveChanges();
+            }
+        }
+
+        RefreshDeviceInCollection(deviceId, d =>
+        {
+            d.IsOn = isOn;
+            d.LastSeen = DateTime.UtcNow;
+        });
+
+        AddActivity($"{_devices.FirstOrDefault(d => d.Id == deviceId)?.Name ?? ("Device " + deviceId)} state synced to {(isOn ? "on" : "off")} (poll)");
+        RaiseOnUI(StateChanged);
     }
 }

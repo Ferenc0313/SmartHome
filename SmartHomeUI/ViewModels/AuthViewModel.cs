@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using Microsoft.EntityFrameworkCore;
 using SmartHomeUI.Data;
 using SmartHomeUI.Models;
@@ -34,6 +36,9 @@ public class AuthViewModel : INotifyPropertyChanged
 
     private string _regConfirm = string.Empty;
     public string RegConfirm { get => _regConfirm; set { _regConfirm = value; OnPropertyChanged(); } }
+
+    private string _regPat = string.Empty;
+    public string RegPat { get => _regPat; set { _regPat = value; OnPropertyChanged(); } }
 
     public ICommand RegisterCommand { get; }
 
@@ -73,7 +78,12 @@ public class AuthViewModel : INotifyPropertyChanged
                 var tracked = tdb.Users.Single(u => u.Id == user.Id);
                 tracked.IsOnline = true;
                 tdb.SaveChanges();
-                AuthService.LogIn(tracked);
+                string? patPlain = null;
+                if (!string.IsNullOrWhiteSpace(tracked.SmartThingsPatEncrypted))
+                {
+                    try { patPlain = TokenProtection.Unprotect(tracked.SmartThingsPatEncrypted); } catch { patPlain = null; }
+                }
+                AuthService.LogIn(tracked, patPlain);
                 LoggedIn?.Invoke(tracked);
             }
             StatusMessage = $"Welcome, {user.Name}!";
@@ -96,6 +106,13 @@ public class AuthViewModel : INotifyPropertyChanged
             StatusMessage = "Passwords do not match.";
             return;
         }
+        if (string.IsNullOrWhiteSpace(RegPat))
+        {
+            StatusMessage = "SmartThings PAT is required.";
+            return;
+        }
+        var normalizedPat = NormalizePat(RegPat);
+        var patOk = ValidatePat(normalizedPat);
         using var db = new SmartHomeDbContext();
         if (db.Users.Any(u => u.Name == RegName))
         {
@@ -109,16 +126,50 @@ public class AuthViewModel : INotifyPropertyChanged
             Email = RegEmail.Trim(),
             PasswordHash = hash,
             PasswordSalt = salt,
-            IsOnline = false
+            IsOnline = false,
+            SmartThingsPatEncrypted = TokenProtection.Protect(normalizedPat)
         };
         db.Users.Add(user);
         db.SaveChanges();
-        StatusMessage = "Registration successful. You can log in now.";
+        StatusMessage = patOk
+            ? "Registration successful. You can log in now."
+            : "Registration saved. PAT could not be verified now (401/timeout); try toggling a device after login.";
         Registered?.Invoke("Registration successful. Please sign in.");
         // clear
-        RegPassword = RegConfirm = string.Empty;
+        RegPassword = RegConfirm = RegPat = string.Empty;
         OnPropertyChanged(nameof(RegPassword));
         OnPropertyChanged(nameof(RegConfirm));
+        OnPropertyChanged(nameof(RegPat));
+    }
+
+    private string NormalizePat(string pat)
+    {
+        if (string.IsNullOrWhiteSpace(pat)) return string.Empty;
+        // Remove all whitespace characters
+        return new string(pat.Where(c => !char.IsWhiteSpace(c)).ToArray());
+    }
+
+    private bool ValidatePat(string pat)
+    {
+        if (string.IsNullOrWhiteSpace(pat)) return false;
+        pat = NormalizePat(pat);
+        try
+        {
+            using var http = new HttpClient { BaseAddress = new Uri("https://api.smartthings.com/v1/") };
+            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", pat);
+            http.Timeout = TimeSpan.FromSeconds(8);
+            http.DefaultRequestHeaders.Accept.Clear();
+            http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var res = http.GetAsync("devices").GetAwaiter().GetResult();
+            if (res.IsSuccessStatusCode) return true;
+            // Do not hard-block registration on 401/other; let runtime toggling surface issues.
+            return true;
+        }
+        catch
+        {
+            // Network/auth errors: don't block registration, let runtime surface errors.
+            return true;
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

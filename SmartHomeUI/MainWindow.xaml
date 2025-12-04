@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:SmartHomeUI"
         mc:Ignorable="d"
         Title="Smart Home Hub" 
+        Icon="pack://application:,,,/SmartHomeUI;component/Assets/Icons/Main_Icon.png"
         Height="900" 
         Width="1600"
         WindowStyle="None"
@@ -46,12 +47,17 @@
                     </Grid.RowDefinitions>
 
                     <!-- Smart Home title (neon glow) -->
-
-                    <!-- Smart Home title (neon glow) -->
                     <StackPanel Grid.Row="1" Margin="25,16,25,30">
-                        <TextBlock Text="? Smart Home" 
-                                   Style="{StaticResource NeonTitleStyle}"
-                                   HorizontalAlignment="Left"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source="pack://application:,,,/SmartHomeUI;component/Assets/Icons/Main_Icon.png"
+                                   Width="28"
+                                   Height="28"
+                                   Stretch="Uniform"
+                                   Margin="0,0,10,0"/>
+                            <TextBlock Text="Smart Home" 
+                                       Style="{StaticResource NeonTitleStyle}"
+                                       HorizontalAlignment="Left"/>
+                        </StackPanel>
                         <TextBlock Text="Control Hub" 
                                    Foreground="{StaticResource TextDimmed}"
                                    FontSize="14"
@@ -84,7 +90,7 @@
                                 Click="NavigateToUsers">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE716;" Style="{StaticResource MenuIconStyle}"/>
-                                <TextBlock Text="Users" VerticalAlignment="Center"/>
+                                <TextBlock Text="Account" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
 
@@ -188,4 +194,3 @@
     </Grid>
 
 </Window>
-

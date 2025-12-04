@@ -49,6 +49,9 @@
                 <TextBlock Text="Confirm Password" Style="{StaticResource InputLabelText}"/>
                 <PasswordBox x:Name="RegConfirmBox" Style="{StaticResource GlassPasswordBox}" PasswordChanged="RegConfirmBox_PasswordChanged"/>
 
+                <TextBlock Text="SmartThings PAT" Style="{StaticResource InputLabelText}"/>
+                <TextBox Style="{StaticResource GlassTextBox}" Text="{Binding RegPat, UpdateSourceTrigger=PropertyChanged}" ToolTip="SmartThings Personal Access Token"/>
+
                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                     <Button Content="Register" Command="{Binding RegisterCommand}" Style="{StaticResource GlassActionButton}" Width="140"/>
                     <Button Content="Cancel" Style="{StaticResource GlassActionButton}" Width="120" Margin="10,0,0,0" Click="CancelRegister_Click"/>
