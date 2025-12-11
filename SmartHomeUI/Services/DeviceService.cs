@@ -97,6 +97,15 @@ public sealed class WidgetCapabilities
                     changed = true;
                 }
             }
+            // Normalize SmartDoor icon for virtual devices too
+            if (!string.IsNullOrWhiteSpace(d.Type) && d.Type.Equals("SmartDoor", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(d.IconKey) || d.IconKey.Equals("E8A7", StringComparison.OrdinalIgnoreCase))
+                {
+                    d.IconKey = "Assets/Icons/door.png";
+                    changed = true;
+                }
+            }
         }
         if (changed) db.SaveChanges();
 
@@ -273,6 +282,8 @@ public sealed class WidgetCapabilities
         });
     }
 
+    public static void AddActivityMessage(string message) => AddActivity(message);
+
     private static void RaiseOnUI(Action? action) => RunOnUI(() => action?.Invoke());
 
     private static void RunOnUI(Action action)
@@ -313,11 +324,50 @@ public sealed class WidgetCapabilities
         }
     }
 
+    public static void SetSmartDoorStateForCoSafety(bool isOpen)
+    {
+        var doors = _devices.Where(d => d.Type.Equals("SmartDoor", StringComparison.OrdinalIgnoreCase)).ToList();
+        if (!doors.Any()) return;
+
+        foreach (var door in doors)
+        {
+            // update runtime state
+            if (_state.TryGetValue(door.Id, out var st))
+            {
+                st.IsOn = isOpen;
+                st.LastSeen = DateTime.UtcNow;
+            }
+
+            // persist to DB
+            using (var db = new SmartHomeDbContext())
+            {
+                var tracked = db.Devices.FirstOrDefault(d => d.Id == door.Id);
+                if (tracked is not null)
+                {
+                    tracked.IsOn = isOpen;
+                    tracked.LastSeen = DateTime.UtcNow;
+                    db.SaveChanges();
+                }
+            }
+
+            // update observable collection copy
+            RefreshDeviceInCollection(door.Id, d =>
+            {
+                d.IsOn = isOpen;
+                d.LastSeen = DateTime.UtcNow;
+            });
+        }
+
+        AddActivity($"Smart door {(isOpen ? "opened" : "closed")} due to CO safety automation.");
+        RaiseOnUI(StateChanged);
+    }
+
     private static string ResolveIconFromType(string? type)
     {
         if (string.IsNullOrWhiteSpace(type)) return "E80F";
         return type.Equals("SmartPlug", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Smart_Plug.png"
              : type.Equals("SmartBulb", StringComparison.OrdinalIgnoreCase) ? "E7F8"
+             : type.Equals("SmartDoor", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/door.png"
              : "E80F";
     }
 

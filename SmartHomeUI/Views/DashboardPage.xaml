@@ -5,6 +5,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:conv="clr-namespace:SmartHomeUI.Converters"
              xmlns:vm="clr-namespace:SmartHomeUI.ViewModels"
+             xmlns:co="clr-namespace:SmartHomeUI.Presentation.Views"
+             xmlns:cosafety="clr-namespace:SmartHomeUI.Presentation.ViewModels"
              mc:Ignorable="d"
              d:DesignHeight="900" d:DesignWidth="1400">
 
@@ -157,7 +159,15 @@
 
         <!-- LEFT: Devices -->
         <Grid Grid.Column="0">
-            <Border Style="{StaticResource GlassPanel}" Margin="10" Padding="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <co:CoSafetyPanel Grid.Row="0" Margin="10,10,10,6"
+                               Visibility="{Binding CoSafetyAvailable, Converter={StaticResource BoolToVisibility}}"/>
+
+            <Border Grid.Row="1" Style="{StaticResource GlassPanel}" Margin="10,0,10,10" Padding="16">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -222,13 +232,94 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Margin="6"
+                                    <Border x:Name="DeviceCard"
+                                            Margin="6"
                                             Padding="12"
-                                            MinWidth="170"
-                                            MinHeight="190"
+                                            MinWidth="150"
+                                            MinHeight="170"
                                             CornerRadius="16"
                                             BorderThickness="1"
                                             BorderBrush="#2200FFFF">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#0A0A0A0A"/>
+                                                <Setter Property="Opacity" Value="1"/>
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Type}" Value="CoSensor"/>
+                                                            <Condition Binding="{Binding Source={x:Static cosafety:CoSafetyUiState.Instance}, Path=IsWarning}" Value="True"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Background" Value="#55FFD54F"/>
+                                                        <MultiDataTrigger.EnterActions>
+                                                            <BeginStoryboard x:Name="WarnBlinkStoryboard">
+                                                                <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                     From="1" To="0.4" Duration="0:0:0.6"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </MultiDataTrigger.EnterActions>
+                                                        <MultiDataTrigger.ExitActions>
+                                                            <StopStoryboard BeginStoryboardName="WarnBlinkStoryboard"/>
+                                                        </MultiDataTrigger.ExitActions>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Type}" Value="CoSensor"/>
+                                                            <Condition Binding="{Binding Source={x:Static cosafety:CoSafetyUiState.Instance}, Path=IsCritical}" Value="True"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Background" Value="#66FF4F4F"/>
+                                                        <MultiDataTrigger.EnterActions>
+                                                            <BeginStoryboard x:Name="CriticalBlinkStoryboard">
+                                                                <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                     From="1" To="0.35" Duration="0:0:0.45"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </MultiDataTrigger.EnterActions>
+                                                        <MultiDataTrigger.ExitActions>
+                                                            <StopStoryboard BeginStoryboardName="CriticalBlinkStoryboard"/>
+                                                        </MultiDataTrigger.ExitActions>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Type}" Value="CoDetector"/>
+                                                            <Condition Binding="{Binding Source={x:Static cosafety:CoSafetyUiState.Instance}, Path=DetectorActive}" Value="True"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Background" Value="#66FF4F4F"/>
+                                                        <MultiDataTrigger.EnterActions>
+                                                            <BeginStoryboard x:Name="DetectorBlinkStoryboard">
+                                                                <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                     From="1" To="0.35" Duration="0:0:0.4"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </MultiDataTrigger.EnterActions>
+                                                        <MultiDataTrigger.ExitActions>
+                                                            <StopStoryboard BeginStoryboardName="DetectorBlinkStoryboard"/>
+                                                        </MultiDataTrigger.ExitActions>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Type}" Value="SmartDoor"/>
+                                                            <Condition Binding="{Binding Source={x:Static cosafety:CoSafetyUiState.Instance}, Path=DoorEmergency}" Value="True"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Background" Value="#5532E0FF"/>
+                                                        <MultiDataTrigger.EnterActions>
+                                                            <BeginStoryboard x:Name="DoorBlinkStoryboard">
+                                                                <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                     From="1" To="0.55" Duration="0:0:0.7"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </MultiDataTrigger.EnterActions>
+                                                        <MultiDataTrigger.ExitActions>
+                                                            <StopStoryboard BeginStoryboardName="DoorBlinkStoryboard"/>
+                                                        </MultiDataTrigger.ExitActions>
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
                                         <Grid Margin="0">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
@@ -263,7 +354,8 @@
                                                         </Style>
                                                     </Ellipse.Style>
                                                 </Ellipse>
-                                                <TextBlock Grid.Row="1"
+                                                <TextBlock x:Name="StateText"
+                                                           Grid.Row="1"
                                                            Margin="0,6,0,0"
                                                            HorizontalAlignment="Center"
                                                            FontSize="12"
@@ -287,6 +379,7 @@
                                                 <Grid>
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
                                                     </Grid.RowDefinitions>
@@ -314,6 +407,26 @@
                                                                     </Style>
                                                                 </Image.Style>
                                                             </Image>
+                                                            <Border x:Name="DoorIconMaskOpen"
+                                                                    Width="52"
+                                                                    Height="52"
+                                                                    Visibility="Collapsed"
+                                                                    Background="{StaticResource NeonCyan}">
+                                                                <Border.OpacityMask>
+                                                                    <ImageBrush ImageSource="pack://application:,,,/SmartHomeUI;component/Assets/Icons/door.png"
+                                                                                Stretch="Uniform"/>
+                                                                </Border.OpacityMask>
+                                                            </Border>
+                                                            <Border x:Name="DoorIconMaskClosed"
+                                                                    Width="52"
+                                                                    Height="52"
+                                                                    Visibility="Collapsed"
+                                                                    Background="{StaticResource NeonCyan}">
+                                                                <Border.OpacityMask>
+                                                                    <ImageBrush ImageSource="pack://application:,,,/SmartHomeUI;component/Assets/Icons/closed-door-with-border-silhouette.png"
+                                                                                Stretch="Uniform"/>
+                                                                </Border.OpacityMask>
+                                                            </Border>
                                                             <TextBlock x:Name="TileIconGlyph"
                                                                        Text="{Binding IconKey, Converter={StaticResource IconKeyToGlyph}}"
                                                                        FontFamily="Segoe MDL2 Assets"
@@ -340,7 +453,16 @@
                                                                Margin="0,10,0,0"
                                                                FontWeight="SemiBold"/>
 
-                                                    <TextBlock Grid.Row="2"
+                                                    <TextBlock x:Name="StatusLabel"
+                                                               Grid.Row="2"
+                                                               HorizontalAlignment="Center"
+                                                               Margin="0,4,0,0"
+                                                               Visibility="Collapsed"
+                                                               FontWeight="Bold"
+                                                               Foreground="Black"
+                                                               Text="status"/>
+
+                                                    <TextBlock Grid.Row="3"
                                                                Text="{Binding Room}"
                                                                HorizontalAlignment="Center"
                                                                Foreground="{StaticResource TextDimmed}"
@@ -390,6 +512,61 @@
                                             <Setter TargetName="ValueSlider" Property="Minimum" Value="16"/>
                                             <Setter TargetName="ValueSlider" Property="Maximum" Value="28"/>
                                         </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Type}" Value="CoSensor"/>
+                                                <Condition Binding="{Binding Source={x:Static cosafety:CoSafetyUiState.Instance}, Path=IsWarning}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="StatusLabel" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="StatusLabel" Property="Text" Value="warning"/>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Type}" Value="CoSensor"/>
+                                                <Condition Binding="{Binding Source={x:Static cosafety:CoSafetyUiState.Instance}, Path=IsCritical}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="StatusLabel" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="StatusLabel" Property="Text" Value="critical"/>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Type}" Value="CoDetector"/>
+                                                <Condition Binding="{Binding Source={x:Static cosafety:CoSafetyUiState.Instance}, Path=DetectorActive}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="StatusLabel" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="StatusLabel" Property="Text" Value="alarm"/>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Type}" Value="SmartDoor"/>
+                                                <Condition Binding="{Binding Source={x:Static cosafety:CoSafetyUiState.Instance}, Path=DoorEmergency}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="StatusLabel" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="StatusLabel" Property="Text" Value="emergency"/>
+                                        </MultiDataTrigger>
+                                        <DataTrigger Binding="{Binding Type}" Value="SmartDoor">
+                                            <Setter TargetName="TileIconImage" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="TileIconGlyph" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="DoorIconMaskOpen" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Type}" Value="SmartDoor"/>
+                                                <Condition Binding="{Binding IsOn}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="DoorIconMaskOpen" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="DoorIconMaskClosed" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="StateText" Property="Text" Value="Open"/>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Type}" Value="SmartDoor"/>
+                                                <Condition Binding="{Binding IsOn}" Value="False"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="DoorIconMaskOpen" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="DoorIconMaskClosed" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="StateText" Property="Text" Value="Closed"/>
+                                        </MultiDataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -433,4 +610,3 @@
 
     </Grid>
 </UserControl>
-

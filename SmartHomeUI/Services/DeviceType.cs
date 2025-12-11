@@ -4,5 +4,6 @@ public enum DeviceType
 {
     Unknown,
     SmartPlug,
-    SmartBulb
+    SmartBulb,
+    SmartDoor
 }

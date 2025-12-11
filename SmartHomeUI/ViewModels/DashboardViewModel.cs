@@ -53,6 +53,18 @@ public class DashboardViewModel : INotifyPropertyChanged
     private int _onCount;
     public int OnCount { get => _onCount; private set { _onCount = value; OnPropertyChanged(); } }
 
+    private bool _coSafetyAvailable;
+    public bool CoSafetyAvailable
+    {
+        get => _coSafetyAvailable;
+        private set
+        {
+            if (_coSafetyAvailable == value) return;
+            _coSafetyAvailable = value;
+            OnPropertyChanged();
+        }
+    }
+
 
     public ReadOnlyObservableCollection<DeviceService.ActivityEntry> Activity => DeviceService.Activity;
 
@@ -73,6 +85,7 @@ public class DashboardViewModel : INotifyPropertyChanged
         _isLoaded = true;
 
         UpdateAggregates();
+        UpdateCoSafetyAvailability();
         RefreshWidgetOptions();
         UpdateOptionSelections();
 
@@ -153,12 +166,14 @@ public class DashboardViewModel : INotifyPropertyChanged
     private void OnDevicesChanged()
     {
         UpdateAggregates();
+        UpdateCoSafetyAvailability();
         RefreshWidgetOptions();
     }
 
     private void OnStateChanged()
     {
         UpdateAggregates();
+        UpdateCoSafetyAvailability();
     }
 
     private void UpdateAggregates()
@@ -169,6 +184,15 @@ public class DashboardViewModel : INotifyPropertyChanged
         OfflineCount = total - online;
         LowBatteryCount = low;
         OnCount = on;
+    }
+
+    private void UpdateCoSafetyAvailability()
+    {
+        var snapshot = Devices.ToList();
+        bool hasSensor = snapshot.Any(d => d.Type.Equals("CoSensor", StringComparison.OrdinalIgnoreCase));
+        bool hasDetector = snapshot.Any(d => d.Type.Equals("CoDetector", StringComparison.OrdinalIgnoreCase));
+        bool hasDoor = snapshot.Any(d => d.Type.Equals("SmartDoor", StringComparison.OrdinalIgnoreCase));
+        CoSafetyAvailable = hasSensor && hasDetector && hasDoor;
     }
 
     private void InitializeWidgetOptions()

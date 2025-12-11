@@ -1,0 +1,99 @@
+<UserControl x:Class="SmartHomeUI.Presentation.Views.CoSafetyPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:devices="clr-namespace:SmartHomeUI.Domain.Devices"
+             mc:Ignorable="d"
+             d:DesignHeight="320"
+             d:DesignWidth="1200">
+    <Border Style="{StaticResource GlassPanel}" Padding="16">
+        <StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="CO Safety Automation"
+                           Foreground="{StaticResource NeonCyan}"
+                           FontSize="18"
+                           FontWeight="Bold"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
+                <TextBlock Text="Virtual CO level" VerticalAlignment="Center" />
+                <Slider Minimum="0"
+                        Maximum="100"
+                        Width="320"
+                        Margin="12,0,0,0"
+                        Value="{Binding CoLevel, UpdateSourceTrigger=PropertyChanged}"
+                        TickFrequency="10"
+                        IsSnapToTickEnabled="False"/>
+                <TextBlock Text="{Binding CoLevel, StringFormat={}{0:F0} ppm}"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource NeonCyan}"
+                           VerticalAlignment="Center"
+                           Margin="12,0,0,0"/>
+            </StackPanel>
+
+            <Grid Margin="0,8,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="CO Sensor" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
+                    <TextBlock Text="{Binding SensorStateText}"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,4,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource TextDimmed}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SensorState}" Value="{x:Static devices:CoState.Normal}">
+                                        <Setter Property="Foreground" Value="#88FFFFFF"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding SensorState}" Value="{x:Static devices:CoState.Warning}">
+                                        <Setter Property="Foreground" Value="{StaticResource NeonMagenta}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding SensorState}" Value="{x:Static devices:CoState.Critical}">
+                                        <Setter Property="Foreground" Value="{StaticResource NeonCyan}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="CO Detector" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetectorStatus}"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,4,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource TextDimmed}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDetectorActive}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource NeonCyan}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="SmartDoor" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
+                    <TextBlock Margin="0,4,0,0">
+                        <Run Text="{Binding DoorStateText, Mode=OneWay}"/>
+                        <Run Text=" | "/>
+                        <Run Text="{Binding DoorLockStateText, Mode=OneWay}"/>
+                        <Run Text=" | "/>
+                        <Run Text="{Binding DoorModeText, Mode=OneWay}"/>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -27,6 +27,10 @@ public partial class AddDeviceDialog : Window
         new("Speaker", "\uE767", "E767", "Speaker"),
         new("TV", "\uE7F4", "E7F4", "TV"),
         new("Weather Station", "\uE706", "E706", "Weather"),
+        // CO safety kit
+        new("CO Sensor", "\uE9CA", "E9CA", "CoSensor"),     // gas sensor glyph
+        new("CO Detector", "\uE7E7", "E7E7", "CoDetector"), // alert/bell style
+        new("Smart Door", "\uE8A7", "Assets/Icons/door.png", "SmartDoor"),   // neon door image
     };
 
     private void DeviceSelect_Click(object sender, RoutedEventArgs e)
@@ -45,5 +49,3 @@ public partial class AddDeviceDialog : Window
         Close();
     }
 }
-
-
