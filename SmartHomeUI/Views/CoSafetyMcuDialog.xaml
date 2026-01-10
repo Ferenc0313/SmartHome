@@ -1,0 +1,197 @@
+<Window x:Class="SmartHomeUI.Views.CoSafetyMcuDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:conv="clr-namespace:SmartHomeUI.Converters"
+        mc:Ignorable="d"
+        Title="CO Safety MCU"
+        Icon="pack://application:,,,/SmartHomeUI;component/Assets/Icons/Main_Icon.png"
+        Height="520"
+        Width="840"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize">
+    <Window.Resources>
+        <SolidColorBrush x:Key="DialogTitleBarBrush" Color="#E6000000"/>
+        <LinearGradientBrush x:Key="DialogBackdrop" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#0E1A25" Offset="0"/>
+            <GradientStop Color="#0A2431" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="DialogHeaderBrush" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#192B36" Offset="0"/>
+            <GradientStop Color="#123E4F" Offset="0.55"/>
+            <GradientStop Color="#2A0F26" Offset="1"/>
+        </LinearGradientBrush>
+        <DropShadowEffect x:Key="DialogGlow" Color="#19f1ff" BlurRadius="32" ShadowDepth="0" Opacity="0.55"/>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <conv:BoolToTextConverter x:Key="BoolToText"/>
+    </Window.Resources>
+    <Border Style="{StaticResource GlassPanel}"
+            Padding="18"
+            Margin="8"
+            Background="{StaticResource DialogBackdrop}"
+            BorderThickness="2"
+            Effect="{StaticResource DialogGlow}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0"
+                    Background="{StaticResource DialogTitleBarBrush}"
+                    CornerRadius="10,10,0,0"
+                    Padding="10,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <DockPanel LastChildFill="False">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/SmartHomeUI;component/Assets/Icons/Main_Icon.png"
+                               Width="18"
+                               Height="18"
+                               Margin="0,0,8,0"/>
+                        <TextBlock Text="CO Safety MCU"
+                                   VerticalAlignment="Center"
+                                   FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <Button DockPanel.Dock="Right"
+                            Width="32"
+                            Height="24"
+                            Padding="0"
+                            Margin="8,0,0,0"
+                            Style="{StaticResource GlassActionButton}"
+                            Click="Close_Click">
+                        <TextBlock Text="X"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"/>
+                    </Button>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="1"
+                    Padding="14"
+                    CornerRadius="10"
+                    Background="{StaticResource DialogHeaderBrush}"
+                    BorderBrush="{StaticResource NeonCyan}"
+                    BorderThickness="0,0,0,2">
+                <DockPanel>
+                    <Border Width="10"
+                            Height="36"
+                            CornerRadius="6"
+                            Background="{StaticResource NeonCyan}"
+                            VerticalAlignment="Center"
+                            Opacity="0.7"
+                            Margin="0,0,12,0"/>
+                    <StackPanel>
+                        <TextBlock Text="Configure CO Safety MCU"
+                                   Style="{StaticResource NeonTitleStyle}"
+                                   FontSize="24"/>
+                        <TextBlock Text="Live controls and telemetry for the virtual CO safety stack"
+                                   Foreground="{StaticResource TextDimmed}"
+                                   FontSize="12"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Grid Grid.Row="2" Margin="0,12,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.25*"/>
+                    <ColumnDefinition Width="0.9*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Live state" Foreground="{StaticResource NeonCyan}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <TextBlock Text="CO level" Width="120"/>
+                        <TextBlock Text="{Binding CoLevel, StringFormat={}{0:F0} ppm}" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Sensor state" Width="120"/>
+                        <TextBlock Text="{Binding SensorState}" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Detector" Width="120"/>
+                        <TextBlock Text="{Binding DetectorActive, Converter={StaticResource BoolToText}, ConverterParameter='Active|Inactive'}" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Door" Width="120"/>
+                        <TextBlock Text="{Binding DoorOpen, Converter={StaticResource BoolToText}, ConverterParameter='Open|Closed'}" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Door lock" Width="120"/>
+                        <TextBlock Text="{Binding DoorLocked, Converter={StaticResource BoolToText}, ConverterParameter='Locked|Unlocked'}" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Door mode" Width="120"/>
+                        <TextBlock Text="{Binding DoorMode}" FontWeight="SemiBold"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Thresholds" Foreground="{StaticResource NeonCyan}" Margin="0,12,0,4"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Warning threshold" Width="160"/>
+                        <Slider Minimum="5" Maximum="80" Width="220" Value="{Binding WarningThreshold, Mode=TwoWay}"/>
+                        <TextBlock Text="{Binding WarningThreshold, StringFormat={}{0:F0} ppm}" Margin="8,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Critical threshold" Width="160"/>
+                        <Slider Minimum="20" Maximum="100" Width="220" Value="{Binding CriticalThreshold, Mode=TwoWay}"/>
+                        <TextBlock Text="{Binding CriticalThreshold, StringFormat={}{0:F0} ppm}" Margin="8,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock Text="Ventilation drop" Width="160"/>
+                        <Slider Minimum="1" Maximum="40" Width="220" Value="{Binding VentilationStrength, Mode=TwoWay}"/>
+                        <TextBlock Text="{Binding VentilationStrength, StringFormat={}{0:F0} ppm/tick}" Margin="8,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <Button Content="Apply settings" Width="160" Style="{StaticResource GlassActionButton}" Click="ApplySettings_Click"/>
+                    </StackPanel>
+                    <TextBlock Text="Requires: CO Safety MCU + CO Sensor + CO Detector (all turned on)."
+                               Foreground="{StaticResource TextDimmed}" FontSize="12" Margin="0,8,0,0"/>
+                    <TextBlock Text="Turn on the missing devices to enable automation."
+                               Foreground="{StaticResource NeonMagenta}" FontSize="12">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsReady}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <Border Grid.Column="1" Padding="10" Style="{StaticResource GlassPanel}">
+                    <StackPanel>
+                        <TextBlock Text="MCU log" Foreground="{StaticResource NeonCyan}"/>
+                        <ListBox ItemsSource="{Binding LogEntries}"
+                                 Height="182"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Margin="0,6,0,0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <TextBlock FontSize="11" Foreground="{StaticResource TextDimmed}" Text="{Binding Time, StringFormat={}{0:HH:mm:ss}}"/>
+                                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Close" Width="120" Style="{StaticResource GlassActionButton}" Click="Close_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

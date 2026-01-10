@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Input;
 
 namespace SmartHomeUI.Views;
 
 public partial class AddDeviceDialog : Window
 {
-    public record DeviceOption(string Name, string Glyph, string IconKey, string Type);
+    public record DeviceOption(string Name, string IconKey, string Type);
 
     public DeviceOption? SelectedOption { get; private set; }
 
@@ -17,20 +18,27 @@ public partial class AddDeviceDialog : Window
 
     private IEnumerable<DeviceOption> BuildOptions() => new List<DeviceOption>
     {
-        new("Smart Bulb", "\uE7F8", "E7F8", "Light"),
-        new("Smart Plug", "\uE95F", "E95F", "Plug"),
-        new("Smart Lock", "\uE72E", "E72E", "Lock"),
-        new("Thermostat", "\uE814", "E814", "Thermostat"),
-        new("Camera", "\uE722", "E722", "Camera"),
-        new("Motion Sensor", "\uE7ED", "E7ED", "SensorMotion"),
-        new("Smoke Alarm", "\uE7F4", "E7F4", "Alarm"),
-        new("Speaker", "\uE767", "E767", "Speaker"),
-        new("TV", "\uE7F4", "E7F4", "TV"),
-        new("Weather Station", "\uE706", "E706", "Weather"),
+        new("Smart Bulb", "Assets/Icons/Smart_Bulb.png", "Light"),
+        new("Smart Plug", "Assets/Icons/Smart_Plugg.png", "Plug"),
+        new("Smart Lock", "Assets/Icons/Smart_Lock.png", "Lock"),
+        new("Thermostat", "Assets/Icons/Thermostat.png", "Thermostat"),
+        new("Camera", "E722", "Camera"),
+        new("Motion Sensor", "Assets/Icons/Motion_Sensor.png", "SensorMotion"),
+        new("Smoke Alarm", "Assets/Icons/Smoke_Alarm.png", "Alarm"),
+        new("Speaker", "E767", "Speaker"),
+        new("TV", "E7F4", "TV"),
+        new("Weather Station", "Assets/Icons/Weather_Station.png", "Weather"),
         // CO safety kit
-        new("CO Sensor", "\uE9CA", "E9CA", "CoSensor"),     // gas sensor glyph
-        new("CO Detector", "\uE7E7", "E7E7", "CoDetector"), // alert/bell style
-        new("Smart Door", "\uE8A7", "Assets/Icons/door.png", "SmartDoor"),   // neon door image
+        new("CO Sensor", "Assets/Icons/CO_Sensor.png", "CoSensor"),
+        new("CO Detector", "Assets/Icons/CO_Detector.png", "CoDetector"),
+        new("Smart Door", "Assets/Icons/closed-door-with-border-silhouette.png", "SmartDoor"),
+        new("CO Safety MCU", "Assets/Icons/MCU.png", "CoSafetyMcu"),
+        // Irrigation kit
+        new("Sprinkler MCU", "Assets/Icons/MCU.png", "SprinklerMcu"),
+        new("Soil Moisture Sensor", "Assets/Icons/Soil_Sensor.png", "SoilMoistureSensor"),
+        new("Rain Sensor", "Assets/Icons/Rain_Sensor.png", "RainSensor"),
+        new("Temperature Sensor", "Assets/Icons/Temperature_Sensor.png", "TempSensor"),
+        new("Sprinkler Valve", "Assets/Icons/Sprinkler.png", "SprinklerValve"),
     };
 
     private void DeviceSelect_Click(object sender, RoutedEventArgs e)
@@ -47,5 +55,13 @@ public partial class AddDeviceDialog : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
     }
 }

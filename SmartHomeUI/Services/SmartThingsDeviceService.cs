@@ -10,9 +10,7 @@ using SmartHomeUI.Models;
 
 namespace SmartHomeUI.Services;
 
-/// <summary>
-/// Fetches SmartThings devices and maps them to SmartThingsDeviceDto.
-/// </summary>
+
 public sealed class SmartThingsDeviceService
 {
     private readonly HttpClient _http;

@@ -43,8 +43,11 @@ public class AuthViewModel : INotifyPropertyChanged
     public ICommand RegisterCommand { get; }
 
     // Feedback
-    private string _status = string.Empty;
-    public string StatusMessage { get => _status; set { _status = value; OnPropertyChanged(); } }
+    private string _loginStatus = string.Empty;
+    public string LoginStatusMessage { get => _loginStatus; set { _loginStatus = value; OnPropertyChanged(); } }
+
+    private string _registerStatus = string.Empty;
+    public string RegisterStatusMessage { get => _registerStatus; set { _registerStatus = value; OnPropertyChanged(); } }
 
     // Events for UI actions
     public event Action<User>? LoggedIn;
@@ -56,20 +59,42 @@ public class AuthViewModel : INotifyPropertyChanged
         RegisterCommand = new RelayCommand(_ => Register());
     }
 
+    private const int MaxFailedAttempts = 5;
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(10);
+
     private void Login()
     {
         try
         {
+            RegisterStatusMessage = string.Empty;
             using var db = new SmartHomeDbContext();
             var user = db.Users.AsNoTracking().SingleOrDefault(u => u.Name == LoginName);
             if (user is null)
             {
-                StatusMessage = "User not found. Please register.";
+                LoginStatusMessage = "User not found. Please register.";
+                return;
+            }
+            if (user.LockedUntil.HasValue && user.LockedUntil.Value > DateTime.UtcNow)
+            {
+                var wait = user.LockedUntil.Value - DateTime.UtcNow;
+                LoginStatusMessage = $"Account locked. Try again in {(int)Math.Ceiling(wait.TotalMinutes)} min.";
                 return;
             }
             if (!PasswordHasher.Verify(LoginPassword, user.PasswordHash, user.PasswordSalt))
             {
-                StatusMessage = "Invalid password.";
+                LoginStatusMessage = "Invalid password.";
+                using (var tdb = new SmartHomeDbContext())
+                {
+                    var tracked = tdb.Users.Single(u => u.Id == user.Id);
+                    tracked.FailedLoginCount += 1;
+                    if (tracked.FailedLoginCount >= MaxFailedAttempts)
+                    {
+                        tracked.LockedUntil = DateTime.UtcNow.Add(LockoutDuration);
+                        tracked.FailedLoginCount = 0;
+                        LoginStatusMessage = $"Too many attempts. Locked for {LockoutDuration.TotalMinutes:0} minutes.";
+                    }
+                    tdb.SaveChanges();
+                }
                 return;
             }
             // Mark online
@@ -77,6 +102,9 @@ public class AuthViewModel : INotifyPropertyChanged
             {
                 var tracked = tdb.Users.Single(u => u.Id == user.Id);
                 tracked.IsOnline = true;
+                tracked.FailedLoginCount = 0;
+                tracked.LockedUntil = null;
+                tracked.LastLoginAt = DateTime.UtcNow;
                 tdb.SaveChanges();
                 string? patPlain = null;
                 if (!string.IsNullOrWhiteSpace(tracked.SmartThingsPatEncrypted))
@@ -86,11 +114,11 @@ public class AuthViewModel : INotifyPropertyChanged
                 AuthService.LogIn(tracked, patPlain);
                 LoggedIn?.Invoke(tracked);
             }
-            StatusMessage = $"Welcome, {user.Name}!";
+            LoginStatusMessage = $"Welcome, {user.Name}!";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Login failed: {ex.Message}";
+            LoginStatusMessage = $"Login failed: {ex.Message}";
         }
     }
 
@@ -98,48 +126,57 @@ public class AuthViewModel : INotifyPropertyChanged
     {
         if (string.IsNullOrWhiteSpace(RegName) || string.IsNullOrWhiteSpace(RegPassword))
         {
-            StatusMessage = "Name and password are required.";
+            RegisterStatusMessage = "Name and password are required.";
             return;
         }
+        var normalizedName = RegName.Trim();
         if (!string.Equals(RegPassword, RegConfirm, StringComparison.Ordinal))
         {
-            StatusMessage = "Passwords do not match.";
+            RegisterStatusMessage = "Passwords do not match.";
+            return;
+        }
+        if (!IsPasswordStrong(RegPassword))
+        {
+            RegisterStatusMessage = "Password must be at least 8 chars and include letters and digits.";
             return;
         }
         if (string.IsNullOrWhiteSpace(RegPat))
         {
-            StatusMessage = "SmartThings PAT is required.";
+            RegisterStatusMessage = "SmartThings PAT is required.";
             return;
         }
         var normalizedPat = NormalizePat(RegPat);
         var patOk = ValidatePat(normalizedPat);
         using var db = new SmartHomeDbContext();
-        if (db.Users.Any(u => u.Name == RegName))
+        if (db.Users.Any(u => u.Name == normalizedName))
         {
-            StatusMessage = "Username already exists.";
+            RegisterStatusMessage = "Username already exists.";
             return;
         }
         var (hash, salt) = PasswordHasher.CreateHash(RegPassword);
         var user = new User
         {
-            Name = RegName.Trim(),
+            Name = normalizedName,
             Email = RegEmail.Trim(),
             PasswordHash = hash,
             PasswordSalt = salt,
             IsOnline = false,
-            SmartThingsPatEncrypted = TokenProtection.Protect(normalizedPat)
+            SmartThingsPatEncrypted = TokenProtection.Protect(normalizedPat),
+            CreatedAt = DateTime.UtcNow,
+            FailedLoginCount = 0
         };
         db.Users.Add(user);
         db.SaveChanges();
-        StatusMessage = patOk
+        RegisterStatusMessage = patOk
             ? "Registration successful. You can log in now."
             : "Registration saved. PAT could not be verified now (401/timeout); try toggling a device after login.";
-        Registered?.Invoke("Registration successful. Please sign in.");
-        // clear
-        RegPassword = RegConfirm = RegPat = string.Empty;
-        OnPropertyChanged(nameof(RegPassword));
-        OnPropertyChanged(nameof(RegConfirm));
-        OnPropertyChanged(nameof(RegPat));
+            Registered?.Invoke("Registration successful. Please sign in.");
+            // clear
+            RegPassword = RegConfirm = RegPat = string.Empty;
+            OnPropertyChanged(nameof(RegPassword));
+            OnPropertyChanged(nameof(RegConfirm));
+            OnPropertyChanged(nameof(RegPat));
+        LoginStatusMessage = string.Empty;
     }
 
     private string NormalizePat(string pat)
@@ -170,6 +207,14 @@ public class AuthViewModel : INotifyPropertyChanged
             // Network/auth errors: don't block registration, let runtime surface errors.
             return true;
         }
+    }
+
+    private bool IsPasswordStrong(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8) return false;
+        bool hasLetter = password.Any(char.IsLetter);
+        bool hasDigit = password.Any(char.IsDigit);
+        return hasLetter && hasDigit;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

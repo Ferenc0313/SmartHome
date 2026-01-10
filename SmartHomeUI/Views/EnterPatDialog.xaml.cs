@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 
 namespace SmartHomeUI.Views;
 
@@ -22,5 +23,13 @@ public partial class EnterPatDialog : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
     }
 }

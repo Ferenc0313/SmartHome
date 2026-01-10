@@ -66,7 +66,9 @@ public static class AutomationService
 
     private static void Run(Automation a)
     {
-        if (a.Action == "Toggle")
+        if (a.Action == "SetOnOff")
+            DeviceService.SetOnOffPersist(a.DeviceId, a.Value >= 0.5);
+        else if (a.Action == "Toggle")
             DeviceService.TogglePersist(a.DeviceId);
         else if (a.Action == "SetValue")
             DeviceService.SetValue(a.DeviceId, a.Value);

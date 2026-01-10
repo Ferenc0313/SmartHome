@@ -27,24 +27,42 @@
                 <!-- Two-column layout: Sidebar (left) + Content (right) -->
                 <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="280"/>
+                <ColumnDefinition x:Name="SidebarColumn" Width="280"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- ========== LEFT SIDE: NAV BAR ========== -->
-            <Border Grid.Column="0" 
+            <Border x:Name="SidebarPanel"
+                    Grid.Column="0" 
                     Background="{StaticResource DarkBackground}"
                     BorderThickness="0,0,1,0"
                     BorderBrush="{StaticResource NeonCyan}"
                     Opacity="0.95">
                 
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                    <!-- Sidebar toggle button (right edge of navbar border) -->
+                    <Button x:Name="SidebarToggleButton"
+                            Width="36"
+                            Height="32"
+                            Margin="0,12,12,0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Panel.ZIndex="10"
+                            Click="ToggleSidebar_Click"
+                            Style="{StaticResource GlassActionButton}">
+                        <TextBlock x:Name="SidebarToggleLabel"
+                                   Text="&lt;"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Button>
+
+                    <Grid x:Name="SidebarContent">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
                     <!-- Smart Home title (neon glow) -->
                     <StackPanel Grid.Row="1" Margin="25,16,25,30">
@@ -74,7 +92,7 @@
                     <!-- Menu items -->
                     <StackPanel Grid.Row="3" Margin="15,30,15,15">
                         <Button x:Name="btnDashboard"
-                                Style="{StaticResource ActiveMenuButtonStyle}"
+                                Style="{StaticResource MenuButtonStyle}"
                                 Margin="0,0,0,10"
                                 Click="NavigateToDashboard">
                             <StackPanel Orientation="Horizontal">
@@ -131,6 +149,7 @@
                     </StackPanel>
 
                 </Grid>
+                    </Grid>
             </Border>
 
             <!-- ========== JOBB OLDAL: TARTALOM (PLACEHOLDER) ========== -->
@@ -168,7 +187,7 @@
 
                 <!-- Empty placeholder for content -->
                 <Grid x:Name="DashboardContent" Margin="30">
-                    
+
                     <!-- Temporary placeholder text -->
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                         <TextBlock Text="?? Dashboard Content" 
@@ -186,6 +205,23 @@
                 </Grid>
 
             </Grid>
+
+            <!-- Sidebar open button when the sidebar is collapsed -->
+            <Button x:Name="SidebarToggleButtonCollapsed"
+                    Grid.Column="1"
+                    Width="36"
+                    Height="32"
+                    Margin="0,12,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Panel.ZIndex="10"
+                    Click="ToggleSidebar_Click"
+                    Style="{StaticResource GlassActionButton}">
+                <TextBlock x:Name="SidebarToggleLabelCollapsed"
+                           Text="&gt;"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Button>
 
                 </Grid>
                 

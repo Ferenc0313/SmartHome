@@ -18,4 +18,9 @@ public sealed class DeviceListItem
     public bool Favorite { get; set; }
     public bool IsOn { get; set; }
     public DeviceType DeviceType { get; set; } = DeviceType.Unknown;
+
+    public string DisplayIconKey =>
+        Type.Equals("SmartDoor", System.StringComparison.OrdinalIgnoreCase)
+            ? (IsOn ? "Assets/Icons/door.png" : "Assets/Icons/closed-door-with-border-silhouette.png")
+            : IconKey;
 }

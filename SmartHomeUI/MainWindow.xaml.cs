@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using SmartHomeUI.Data;
 using SmartHomeUI.Services;
 
@@ -13,6 +14,9 @@ namespace SmartHomeUI
     {
         private const double DesignWidth = 1600;
         private const double DesignHeight = 900;
+        private readonly GridLength _sidebarExpandedWidth = new(280);
+        private readonly GridLength _sidebarCollapsedWidth = new(0);
+        private bool _isSidebarCollapsed;
 
         public MainWindow()
         {
@@ -20,6 +24,7 @@ namespace SmartHomeUI
             // Load dashboard by default on startup
             ShowDashboard();
             RefreshMenuState();
+            UpdateSidebarState();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e) => ApplyScaledWindowSize();
@@ -27,13 +32,18 @@ namespace SmartHomeUI
         private void NavigateToDashboard(object sender, RoutedEventArgs e) => ShowDashboard();
         private void NavigateToUsers(object sender, RoutedEventArgs e) => ShowUsers();
         private void NavigateToDevices(object sender, RoutedEventArgs e) => ShowDevices();
-        private void NavigateToSettings(object sender, RoutedEventArgs e) => DashboardContent.Children.Clear();
+        private void NavigateToSettings(object sender, RoutedEventArgs e) => ShowSettings();
         private void NavigateToAutomations(object sender, RoutedEventArgs e) => ShowAutomations();
 
         // Window control buttons (top-right)
         private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
         private void ToggleMaximize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
+        private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
+        {
+            _isSidebarCollapsed = !_isSidebarCollapsed;
+            UpdateSidebarState();
+        }
 
         // Public helpers for programmatic navigation
         public void ShowDashboard()
@@ -50,6 +60,7 @@ namespace SmartHomeUI
                 fallback.Child = txt;
                 DashboardContent.Children.Add(fallback);
             }
+            SetActiveMenu(btnDashboard);
         }
 
         public void ShowUsers()
@@ -60,6 +71,7 @@ namespace SmartHomeUI
             else
                 DashboardContent.Children.Add(new Views.AuthPage());
             RefreshMenuState();
+            SetActiveMenu(btnUsers);
         }
 
         public void ShowDevices()
@@ -76,12 +88,23 @@ namespace SmartHomeUI
                 fallback.Child = txt;
                 DashboardContent.Children.Add(fallback);
             }
+            RefreshMenuState();
+            SetActiveMenu(btnDevices);
         }
 
         public void ShowAutomations()
         {
             DashboardContent.Children.Clear();
             DashboardContent.Children.Add(new Views.AutomationsPage());
+            RefreshMenuState();
+            SetActiveMenu(btnAutomations);
+        }
+
+        public void ShowSettings()
+        {
+            DashboardContent.Children.Clear();
+            RefreshMenuState();
+            SetActiveMenu(btnSettings);
         }
 
         public void RefreshMenuState()
@@ -101,6 +124,11 @@ namespace SmartHomeUI
             {
                 btnAutomations.Visibility = Visibility.Collapsed;
             }
+
+            if (btnAutomations.Visibility == Visibility.Collapsed && ReferenceEquals(_activeMenuButton, btnAutomations))
+            {
+                SetActiveMenu(btnDevices);
+            }
         }
 
         private void ApplyScaledWindowSize()
@@ -114,6 +142,38 @@ namespace SmartHomeUI
 
             Left = workArea.Left + (workArea.Width - Width) / 2;
             Top = workArea.Top + (workArea.Height - Height) / 2;
+        }
+
+        private void UpdateSidebarState()
+        {
+            SidebarColumn.Width = _isSidebarCollapsed ? _sidebarCollapsedWidth : _sidebarExpandedWidth;
+            SidebarToggleButton.Visibility = _isSidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
+            SidebarToggleButtonCollapsed.Visibility = _isSidebarCollapsed ? Visibility.Visible : Visibility.Collapsed;
+
+            SidebarToggleLabel.Text = "<";
+            SidebarToggleLabelCollapsed.Text = ">";
+
+            SidebarPanel.ClipToBounds = !_isSidebarCollapsed;
+            SidebarPanel.BorderThickness = _isSidebarCollapsed ? new Thickness(0) : new Thickness(0, 0, 1, 0);
+            SidebarContent.Visibility = _isSidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
+
+            var toolTipText = _isSidebarCollapsed ? "Oldals\u00E1v megnyit\u00E1sa" : "Oldals\u00E1v bez\u00E1r\u00E1sa";
+            SidebarToggleButton.ToolTip = toolTipText;
+            SidebarToggleButtonCollapsed.ToolTip = toolTipText;
+        }
+
+        private Button? _activeMenuButton;
+
+        private void SetActiveMenu(Button? active)
+        {
+            _activeMenuButton = active;
+            var activeStyle = (Style)FindResource("ActiveMenuButtonStyle");
+            var normalStyle = (Style)FindResource("MenuButtonStyle");
+
+            foreach (var button in new[] { btnDashboard, btnUsers, btnDevices, btnAutomations, btnSettings })
+            {
+                button.Style = ReferenceEquals(button, active) ? activeStyle : normalStyle;
+            }
         }
     }
 }

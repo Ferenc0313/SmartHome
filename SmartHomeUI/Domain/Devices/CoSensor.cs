@@ -18,8 +18,8 @@ public class CoStateChangedEventArgs : EventArgs
 
 public class CoSensor
 {
-    private const double WarningThreshold = 30.0;
-    private const double CriticalThreshold = 60.0;
+    private double _warningThreshold = 30.0;
+    private double _criticalThreshold = 60.0;
 
     private readonly VirtualCoEnvironment _environment;
     private CoState _state = CoState.Normal;
@@ -46,10 +46,16 @@ public class CoSensor
         CoStateChanged?.Invoke(this, new CoStateChangedEventArgs(previous, _state, newLevel));
     }
 
-    private static CoState EvaluateState(double level)
+    public void UpdateThresholds(double warning, double critical)
     {
-        if (level >= CriticalThreshold) return CoState.Critical;
-        if (level >= WarningThreshold) return CoState.Warning;
+        _warningThreshold = Math.Clamp(warning, 5, 95);
+        _criticalThreshold = Math.Clamp(critical, _warningThreshold + 1, 100);
+    }
+
+    private CoState EvaluateState(double level)
+    {
+        if (level >= _criticalThreshold) return CoState.Critical;
+        if (level >= _warningThreshold) return CoState.Warning;
         return CoState.Normal;
     }
 }

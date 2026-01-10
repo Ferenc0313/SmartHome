@@ -5,5 +5,6 @@ public enum DeviceType
     Unknown,
     SmartPlug,
     SmartBulb,
-    SmartDoor
+    SmartDoor,
+    CoSafetyMcu
 }

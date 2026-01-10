@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic; // retained for List<WidgetKind>, might be global but kept minimal
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq; // needed for LINQ operations inside ApplyEcoMode and elsewhere
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using System.Windows.Data;
 using SmartHomeUI.Models;
+using SmartHomeUI.Presentation.ViewModels;
 using SmartHomeUI.Services;
 
 namespace SmartHomeUI.ViewModels;
@@ -25,11 +28,46 @@ public class DashboardViewModel : INotifyPropertyChanged
         Widgets.CollectionChanged += WidgetsOnCollectionChanged;
         RestorePersistedWidgets();
         ApplyEcoModeCommand = new DelegateCommand(ApplyEcoMode);
+
+        DevicesView = new ListCollectionView((IList)DeviceService.Devices)
+        {
+            CustomSort = new BlinkFirstComparer()
+        };
+
+        CoSafetyUiState.Instance.PropertyChanged += (_, __) => RefreshDevicesView();
+        UpdateBlinkAttention();
     }
 
     public ICommand ApplyEcoModeCommand { get; }
 
     public ReadOnlyObservableCollection<Device> Devices => DeviceService.Devices;
+    public ICollectionView DevicesView { get; }
+
+    private bool _hasBlinkingDevices;
+    public bool HasBlinkingDevices
+    {
+        get => _hasBlinkingDevices;
+        private set
+        {
+            if (_hasBlinkingDevices == value) return;
+            _hasBlinkingDevices = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private int _blinkAttentionTick;
+    public int BlinkAttentionTick
+    {
+        get => _blinkAttentionTick;
+        private set
+        {
+            if (_blinkAttentionTick == value) return;
+            _blinkAttentionTick = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private string _blinkSignature = string.Empty;
 
     public ObservableCollection<DashboardWidget> Widgets { get; } = new();
     public ObservableCollection<object> WidgetTiles { get; } = new();
@@ -168,12 +206,14 @@ public class DashboardViewModel : INotifyPropertyChanged
         UpdateAggregates();
         UpdateCoSafetyAvailability();
         RefreshWidgetOptions();
+        RefreshDevicesView();
     }
 
     private void OnStateChanged()
     {
         UpdateAggregates();
         UpdateCoSafetyAvailability();
+        RefreshDevicesView();
     }
 
     private void UpdateAggregates()
@@ -184,6 +224,67 @@ public class DashboardViewModel : INotifyPropertyChanged
         OfflineCount = total - online;
         LowBatteryCount = low;
         OnCount = on;
+    }
+
+    private void RefreshDevicesView()
+    {
+        if (DevicesView is null) return;
+        UpdateBlinkAttention();
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is not null && !dispatcher.CheckAccess())
+            dispatcher.Invoke(() => DevicesView.Refresh());
+        else
+            DevicesView.Refresh();
+    }
+
+    private void UpdateBlinkAttention()
+    {
+        var blinkingIds = DeviceService.Devices
+            .Where(d => GetBlinkPriority(d) < 100)
+            .Select(d => d.Id)
+            .OrderBy(id => id)
+            .ToArray();
+
+        var signature = blinkingIds.Length == 0 ? string.Empty : string.Join(",", blinkingIds);
+        HasBlinkingDevices = blinkingIds.Length > 0;
+
+        if (!string.Equals(signature, _blinkSignature, StringComparison.Ordinal))
+        {
+            _blinkSignature = signature;
+            BlinkAttentionTick++;
+        }
+    }
+
+    private static int GetBlinkPriority(Device d)
+    {
+        var type = d.Type ?? string.Empty;
+        var state = CoSafetyUiState.Instance;
+
+        // Lowest number -> first.
+        if (type.Equals("CoSensor", StringComparison.OrdinalIgnoreCase) && state.IsCritical) return 0;
+        if (type.Equals("CoDetector", StringComparison.OrdinalIgnoreCase) && state.DetectorActive) return 1;
+        if (type.Equals("SmartDoor", StringComparison.OrdinalIgnoreCase) && state.DoorEmergency) return 2;
+        if (type.Equals("CoSensor", StringComparison.OrdinalIgnoreCase) && state.IsWarning) return 3;
+
+        return 100;
+    }
+
+    private sealed class BlinkFirstComparer : IComparer
+    {
+        public int Compare(object? x, object? y)
+        {
+            if (ReferenceEquals(x, y)) return 0;
+            if (x is null) return 1;
+            if (y is null) return -1;
+            if (x is not Device dx || y is not Device dy) return 0;
+
+            var px = GetBlinkPriority(dx);
+            var py = GetBlinkPriority(dy);
+            if (px != py) return px.CompareTo(py);
+
+            return string.Compare(dx.Name, dy.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
     }
 
     private void UpdateCoSafetyAvailability()

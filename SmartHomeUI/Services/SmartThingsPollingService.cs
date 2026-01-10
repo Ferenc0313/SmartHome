@@ -19,6 +19,7 @@ public sealed class SmartThingsPollingService : ISmartThingsPollingService
     private readonly Random _random = new();
     private CancellationTokenSource? _cts;
     private Task? _runner;
+    private DateTime? _resumeAtUtc;
 
     public SmartThingsPollingService(
         SmartThingsPollingOptions? options,
@@ -91,6 +92,14 @@ public sealed class SmartThingsPollingService : ISmartThingsPollingService
 
     private async Task<TimeSpan> PollOnceAsync(CancellationToken token)
     {
+        var now = DateTime.UtcNow;
+        if (_resumeAtUtc.HasValue && now < _resumeAtUtc.Value)
+        {
+            var wait = _resumeAtUtc.Value - now;
+            _logger.LogWarning("SmartThings polling paused for {Seconds}s after repeated auth errors", wait.TotalSeconds);
+            return wait;
+        }
+
         var pat = DeviceService.NormalizePat(AuthService.CurrentSmartThingsPat ?? Environment.GetEnvironmentVariable("SMARTTHINGS_PAT"));
         if (string.IsNullOrWhiteSpace(pat))
         {
@@ -122,6 +131,10 @@ public sealed class SmartThingsPollingService : ISmartThingsPollingService
             if (result.State is null)
             {
                 _logger.LogWarning("SmartThings status fetch failed for device {DeviceId} (HTTP {Status})", dev.PhysicalDeviceId, (int)result.StatusCode);
+                if (result.StatusCode == HttpStatusCode.Unauthorized || result.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    _resumeAtUtc = DateTime.UtcNow.AddMinutes(5);
+                }
                 continue;
             }
 

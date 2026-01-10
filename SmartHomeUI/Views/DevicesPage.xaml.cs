@@ -140,27 +140,43 @@ public partial class DevicesPage : UserControl
     {
         if ((sender as FrameworkElement)?.Tag is DeviceListItem item)
         {
-            if (MessageBox.Show($"Delete '{item.Name}'?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            DeleteDevice(item);
+        }
+    }
+
+    private void DeleteSelected_Click(object sender, RoutedEventArgs e)
+    {
+        if (List.SelectedItem is DeviceListItem item)
+        {
+            DeleteDevice(item);
+        }
+    }
+
+    private void DeleteDevice(DeviceListItem item)
+    {
+        if (MessageBox.Show($"Delete '{item.Name}'?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        if (item.IsPhysical)
+        {
+            _all.Remove(item);
+        }
+        else if (item.DbId is int dbId)
+        {
+            using var db = new SmartHomeDbContext();
+            var tracked = db.Devices.FirstOrDefault(d => d.Id == dbId);
+            if (tracked is not null)
             {
-                if (item.IsPhysical)
-                {
-                    _all.Remove(item);
-                }
-                else if (item.DbId is int dbId)
-                {
-                    using var db = new SmartHomeDbContext();
-                    var tracked = db.Devices.FirstOrDefault(d => d.Id == dbId);
-                    if (tracked is not null)
-                    {
-                        db.Devices.Remove(tracked);
-                        db.SaveChanges();
-                    }
-                }
-                LoadDevices();
-                DeviceService.ReloadForCurrentUser();
-                if (Window.GetWindow(this) is MainWindow mw) mw.RefreshMenuState();
+                db.Devices.Remove(tracked);
+                db.SaveChanges();
             }
         }
+
+        LoadDevices();
+        DeviceService.ReloadForCurrentUser();
+        if (Window.GetWindow(this) is MainWindow mw) mw.RefreshMenuState();
     }
 
     private async void AddPhysical_Click(object sender, RoutedEventArgs e)
@@ -251,5 +267,48 @@ public partial class DevicesPage : UserControl
     {
         if (string.IsNullOrWhiteSpace(pat)) return string.Empty;
         return new string(pat.Where(c => !char.IsWhiteSpace(c)).ToArray());
+    }
+
+    private void ConfigureMcu_Click(object sender, RoutedEventArgs e)
+    {
+        var user = AuthService.CurrentUser;
+        if (user == null)
+        {
+            MessageBox.Show("Please sign in first.");
+            return;
+        }
+
+        if (List.SelectedItem is not DeviceListItem selected) return;
+
+        if (selected.Type.Equals("SprinklerMcu", System.StringComparison.OrdinalIgnoreCase))
+        {
+            IrrigationMcuRuntime.SyncWithDevices();
+            if (!IrrigationMcuRuntime.IsReady)
+            {
+                MessageBox.Show("The sprinkler MCU needs all required virtual devices (MCU, soil moisture, rain, temperature sensors and a sprinkler valve). Add them first.", "Missing devices", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dlg = new SprinklerMcuDialog
+            {
+                Owner = Window.GetWindow(this) as Window
+            };
+            dlg.ShowDialog();
+        }
+        else if (selected.Type.Equals("CoSafetyMcu", System.StringComparison.OrdinalIgnoreCase))
+        {
+            CoSafetyMcuRuntime.SyncWithDevices();
+            if (!CoSafetyMcuRuntime.IsReady)
+            {
+                MessageBox.Show(CoSafetyMcuRuntime.LastStatus, "Missing devices", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dlg = new CoSafetyMcuDialog
+            {
+                Owner = Window.GetWindow(this) as Window
+            };
+            dlg.ShowDialog();
+        }
     }
 }

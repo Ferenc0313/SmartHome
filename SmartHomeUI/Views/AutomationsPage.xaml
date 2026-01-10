@@ -201,15 +201,19 @@
 
                 <StackPanel Grid.Column="6">
                     <TextBlock Text="Action" Style="{StaticResource InputLabelText}"/>
-                    <ComboBox x:Name="ActionBox">
-                        <ComboBoxItem Content="Toggle" IsSelected="True"/>
-                        <ComboBoxItem Content="SetValue"/>
+                    <ComboBox x:Name="ActionBox" SelectionChanged="ActionBox_SelectionChanged">
+                        <ComboBoxItem Content="Toggle" Tag="SetOnOff" IsSelected="True"/>
+                        <ComboBoxItem Content="SetValue" Tag="SetValue"/>
                     </ComboBox>
                 </StackPanel>
 
                 <StackPanel Grid.Column="8">
-                    <TextBlock Text="Value" Style="{StaticResource InputLabelText}"/>
-                    <TextBox x:Name="ValueBox" Style="{StaticResource GlassTextBox}"/>
+                    <TextBlock x:Name="ValueLabel" Text="State" Style="{StaticResource InputLabelText}"/>
+                    <ComboBox x:Name="OnOffBox">
+                        <ComboBoxItem Content="ON" Tag="1" IsSelected="True"/>
+                        <ComboBoxItem Content="OFF" Tag="0"/>
+                    </ComboBox>
+                    <TextBox x:Name="ValueBox" Style="{StaticResource GlassTextBox}" Visibility="Collapsed"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="10"
@@ -400,11 +404,10 @@
                                                            Foreground="{StaticResource NeonComboTextBrush}"
                                                            FontFamily="Segoe UI Semibold"
                                                            FontSize="14">
-                                                    <Run Text="{Binding Action}"/>
+                                                    <Run Text="{Binding DisplayAction}"/>
                                                     <Run Text=" → "/>
                                                     <Run Text="{Binding DeviceName}"/>
-                                                    <Run Text=" "/>
-                                                    <Run Text="{Binding Value}"/>
+                                                    <Run Text="{Binding DisplayValue}"/>
                                                 </TextBlock>
 
                                                 <StackPanel Grid.Row="3"

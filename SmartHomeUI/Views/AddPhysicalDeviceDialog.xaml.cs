@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Input;
 using SmartHomeUI.Models;
 using SmartHomeUI.ViewModels;
 
@@ -29,5 +30,13 @@ public partial class AddPhysicalDeviceDialog : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
     }
 }

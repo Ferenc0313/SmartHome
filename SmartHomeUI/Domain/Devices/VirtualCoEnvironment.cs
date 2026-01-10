@@ -4,7 +4,8 @@ namespace SmartHomeUI.Domain.Devices;
 
 public class VirtualCoEnvironment
 {
-    private double _coLevel;
+    private readonly Random _random = new();
+    private double _coLevel = 18; // start with a mild background
 
     public event EventHandler<double>? CoLevelChanged;
 
@@ -21,4 +22,21 @@ public class VirtualCoEnvironment
     }
 
     public void SetCoLevel(double value) => CoLevel = value;
+
+    /// <summary>
+    /// Natural drift of CO level (background changes).
+    /// </summary>
+    public void Drift()
+    {
+        var delta = (_random.NextDouble() - 0.5) * 6; // -3..+3
+        CoLevel = CoLevel + delta;
+    }
+
+    /// <summary>
+    /// Ventilation when a door/window is open.
+    /// </summary>
+    public void Ventilate(double strength)
+    {
+        CoLevel = Math.Max(0, CoLevel - Math.Abs(strength));
+    }
 }
