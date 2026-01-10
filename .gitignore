@@ -18,3 +18,7 @@ _build/
 
 # Secrets / local config
 token.txt
+
+# Local tools (not part of repo deliverable)
+Tools/
+tools/
