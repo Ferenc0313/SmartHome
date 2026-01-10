@@ -2,9 +2,7 @@ using System.Collections.Generic;
 
 namespace SmartHomeUI.Models;
 
-/// <summary>
-/// Flattened SmartThings device representation used by the app.
-/// </summary>
+
 public sealed class SmartThingsDeviceDto
 {
     public string DeviceId { get; set; } = string.Empty;

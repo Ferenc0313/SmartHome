@@ -1,4 +1,5 @@
 using System.Windows.Controls;
+using System.Windows.Threading;
 using SmartHomeUI.ViewModels;
 
 namespace SmartHomeUI.Views;
@@ -11,6 +12,17 @@ public partial class DashboardPage : UserControl
         var vm = new DashboardViewModel();
         DataContext = vm;
         vm.Load();
+
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DashboardViewModel.BlinkAttentionTick))
+            {
+                Dispatcher.BeginInvoke(DispatcherPriority.Background, new System.Action(() =>
+                {
+                    DevicesScroll?.ScrollToTop();
+                }));
+            }
+        };
     }
 
     private DashboardViewModel? ViewModel => DataContext as DashboardViewModel;
@@ -68,5 +80,10 @@ public partial class DashboardPage : UserControl
         {
             ViewModel?.AddWidget(option.Kind);
         }
+    }
+
+    private void ClearActivity_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        SmartHomeUI.Services.DeviceService.ClearActivity();
     }
 }

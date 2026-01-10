@@ -23,6 +23,8 @@ public partial class AutomationsPage : UserControl
         public string Action { get; init; } = "Toggle";
         public double Value { get; init; }
         public bool Enabled { get; init; }
+        public string DisplayAction { get; init; } = string.Empty;
+        public string DisplayValue { get; init; } = string.Empty;
     }
 
     private System.Collections.Generic.List<AutomationItem> _all = new();
@@ -31,7 +33,42 @@ public partial class AutomationsPage : UserControl
     public AutomationsPage()
     {
         InitializeComponent();
+        Loaded += (_, __) => UpdateActionValueUi();
         LoadData();
+    }
+
+    private string GetSelectedActionKey()
+    {
+        if (ActionBox.SelectedItem is ComboBoxItem item)
+        {
+            var tag = item.Tag?.ToString();
+            if (!string.IsNullOrWhiteSpace(tag)) return tag!;
+            return item.Content?.ToString() ?? "SetOnOff";
+        }
+        return "SetOnOff";
+    }
+
+    private void ActionBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        UpdateActionValueUi();
+    }
+
+    private void UpdateActionValueUi()
+    {
+        if (ActionBox is null || ValueLabel is null || ValueBox is null || OnOffBox is null) return;
+        var actionKey = GetSelectedActionKey();
+        if (actionKey.Equals("SetValue", StringComparison.OrdinalIgnoreCase))
+        {
+            ValueLabel.Text = "Value";
+            ValueBox.Visibility = Visibility.Visible;
+            OnOffBox.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            ValueLabel.Text = "State";
+            ValueBox.Visibility = Visibility.Collapsed;
+            OnOffBox.Visibility = Visibility.Visible;
+        }
     }
 
     private void LoadData()
@@ -55,9 +92,31 @@ public partial class AutomationsPage : UserControl
                 TimeHHmm = a.TimeHHmm,
                 Action = a.Action,
                 Value = a.Value,
-                Enabled = a.Enabled
+                Enabled = a.Enabled,
+                DisplayAction = BuildDisplayAction(a.Action),
+                DisplayValue = BuildDisplayValue(a.Action, a.Value)
             }).ToList();
         ApplyFilter();
+    }
+
+    private static string BuildDisplayAction(string? action)
+    {
+        if (string.IsNullOrWhiteSpace(action)) return "Toggle";
+        if (action.Equals("SetOnOff", StringComparison.OrdinalIgnoreCase)) return "Toggle";
+        return action;
+    }
+
+    private static string BuildDisplayValue(string? action, double value)
+    {
+        if (string.IsNullOrWhiteSpace(action)) return string.Empty;
+        if (action.Equals("SetOnOff", StringComparison.OrdinalIgnoreCase))
+            return value >= 0.5 ? " ON" : " OFF";
+        if (action.Equals("SetValue", StringComparison.OrdinalIgnoreCase))
+            return $" {value.ToString(CultureInfo.InvariantCulture)}";
+        // legacy toggle doesn't need a numeric value in the list
+        if (action.Equals("Toggle", StringComparison.OrdinalIgnoreCase))
+            return string.Empty;
+        return $" {value.ToString(CultureInfo.InvariantCulture)}";
     }
 
     private void AddOrUpdate_Click(object sender, RoutedEventArgs e)
@@ -78,7 +137,7 @@ public partial class AutomationsPage : UserControl
             MessageBox.Show("Select device");
             return;
         }
-        var action = (ActionBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Toggle";
+        var actionKey = GetSelectedActionKey();
         var timeRaw = TimeBox.Text.Trim();
         if (!TimeSpan.TryParseExact(timeRaw, @"hh\:mm", CultureInfo.InvariantCulture, out var ts))
         {
@@ -86,7 +145,17 @@ public partial class AutomationsPage : UserControl
             return;
         }
         var time = new DateTime(2000, 1, 1, ts.Hours, ts.Minutes, 0).ToString("HH:mm");
-        double.TryParse(ValueBox.Text, out var val);
+        var action = actionKey;
+        double val = 0;
+        if (actionKey.Equals("SetValue", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!double.TryParse(ValueBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out val))
+                val = 0;
+        }
+        else if (actionKey.Equals("SetOnOff", StringComparison.OrdinalIgnoreCase))
+        {
+            val = (OnOffBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() == "1" ? 1 : 0;
+        }
         using var db = new SmartHomeDbContext();
         if (_editingAutomationId.HasValue)
         {
@@ -196,11 +265,21 @@ public partial class AutomationsPage : UserControl
         TimeBox.Text = item.TimeHHmm;
 
         var match = ActionBox.Items.OfType<ComboBoxItem>()
-            .FirstOrDefault(i => string.Equals(i.Content?.ToString(), item.Action, StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(i =>
+                string.Equals(i.Tag?.ToString(), item.Action, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(i.Content?.ToString(), item.Action, StringComparison.OrdinalIgnoreCase));
         if (match != null)
             ActionBox.SelectedItem = match;
 
-        ValueBox.Text = item.Value.ToString(CultureInfo.InvariantCulture);
+        if (item.Action.Equals("SetOnOff", StringComparison.OrdinalIgnoreCase))
+        {
+            OnOffBox.SelectedIndex = item.Value >= 0.5 ? 0 : 1;
+            ValueBox.Text = string.Empty;
+        }
+        else
+        {
+            ValueBox.Text = item.Value.ToString(CultureInfo.InvariantCulture);
+        }
         AddOrUpdateButton.Content = "Update";
         CancelEditButton.Visibility = Visibility.Visible;
     }
@@ -218,6 +297,8 @@ public partial class AutomationsPage : UserControl
         if (ActionBox.Items.OfType<ComboBoxItem>().FirstOrDefault() is ComboBoxItem firstAction)
             ActionBox.SelectedItem = firstAction;
         ValueBox.Text = string.Empty;
+        OnOffBox.SelectedIndex = 0;
+        UpdateActionValueUi();
         AddOrUpdateButton.Content = "Add";
         CancelEditButton.Visibility = Visibility.Collapsed;
     }

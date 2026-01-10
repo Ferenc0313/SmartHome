@@ -1,34 +1,86 @@
-<Window x:Class="SmartHomeUI.Views.AddPhysicalDeviceDialog"
+﻿<Window x:Class="SmartHomeUI.Views.AddPhysicalDeviceDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:conv="clr-namespace:SmartHomeUI.Converters"
+        xmlns:svc="clr-namespace:SmartHomeUI.Services"
         Title="Add Physical Device"
         Height="520"
         Width="780"
         WindowStartupLocation="CenterOwner"
-        WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent">
+        Style="{StaticResource DialogWindowStyle}">
     <Window.Resources>
         <conv:IconKeyToGlyphConverter x:Key="IconKeyToGlyph"/>
         <conv:IconKeyToImageSourceConverter x:Key="IconKeyToImageSource"/>
+        <conv:NotNullToVisibilityConverter x:Key="NotNullToVisibility"/>
     </Window.Resources>
-    <Border Style="{StaticResource GlassPanel}" Padding="20">
+    <Border Style="{StaticResource GlassPanel}"
+            Padding="18"
+            Margin="8"
+            Background="{StaticResource DialogBackdrop}"
+            BorderThickness="2"
+            Effect="{StaticResource DialogGlow}">
         <Grid>
             <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Physical devices from SmartThings"
-                       Style="{StaticResource NeonTitleStyle}"/>
-            <TextBlock Grid.Row="0"
-                       Margin="0,6,0,0"
-                       Foreground="{StaticResource TextDimmed}"
-                       Text="Válassz egy vagy több eszközt a listából."/>
+            <Border Grid.Row="0"
+                    Background="{StaticResource DialogTitleBarBrush}"
+                    CornerRadius="10,10,0,0"
+                    Padding="10,0"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <DockPanel LastChildFill="False">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/SmartHomeUI;component/Assets/Icons/Main_Icon.png"
+                               Width="18"
+                               Height="18"
+                               Margin="0,0,8,0"/>
+                        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   VerticalAlignment="Center"
+                                   FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <Button DockPanel.Dock="Right"
+                            Width="32"
+                            Height="24"
+                            Padding="0"
+                            Margin="8,0,0,0"
+                            Style="{StaticResource GlassActionButton}"
+                            Click="Cancel_Click">
+                        <TextBlock Text="X"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"/>
+                    </Button>
+                </DockPanel>
+            </Border>
 
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,12,0,12">
+            <Border Grid.Row="1"
+                    Padding="14"
+                    CornerRadius="10"
+                    Background="{StaticResource DialogHeaderBrush}"
+                    BorderBrush="{StaticResource NeonCyan}"
+                    BorderThickness="0,0,0,2">
+                <DockPanel>
+                    <Border Width="10"
+                            Height="36"
+                            CornerRadius="6"
+                            Background="{StaticResource NeonCyan}"
+                            VerticalAlignment="Center"
+                            Opacity="0.7"
+                            Margin="0,0,12,0"/>
+                    <StackPanel>
+                        <TextBlock Text="Physical devices from SmartThings"
+                                   Style="{StaticResource NeonTitleStyle}"
+                                   FontSize="26"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,12,0,12">
                 <ItemsControl ItemsSource="{Binding Devices}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -41,27 +93,31 @@
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <Grid Width="28" Height="28" Margin="0,0,6,0">
-                                            <Image x:Name="PhysicalIconImage"
+                                            <Image x:Name="PhysicalIconImageSource"
                                                    Source="{Binding Device.IconKey, Converter={StaticResource IconKeyToImageSource}}"
-                                                   Stretch="Uniform"/>
+                                                   Visibility="Collapsed"/>
+                                            <Border x:Name="PhysicalIconMask"
+                                                    Width="28"
+                                                    Height="28"
+                                                    Background="{StaticResource NeonCyan}">
+                                                <Border.OpacityMask>
+                                                    <ImageBrush ImageSource="{Binding ElementName=PhysicalIconImageSource, Path=Source}"
+                                                                Stretch="Uniform"/>
+                                                </Border.OpacityMask>
+                                                <Border.Visibility>
+                                                    <Binding ElementName="PhysicalIconImageSource"
+                                                             Path="Source"
+                                                             Converter="{StaticResource NotNullToVisibility}"/>
+                                                </Border.Visibility>
+                                            </Border>
                                             <TextBlock x:Name="PhysicalIconGlyph"
                                                        Text="{Binding Device.IconKey, Converter={StaticResource IconKeyToGlyph}}"
                                                        FontFamily="Segoe MDL2 Assets"
                                                        FontSize="20"
                                                        Foreground="{StaticResource NeonCyan}"
                                                        VerticalAlignment="Center"
-                                                       HorizontalAlignment="Center">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Source, ElementName=PhysicalIconImage}" Value="{x:Null}">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+                                                       HorizontalAlignment="Center"
+                                                       Visibility="{Binding ElementName=PhysicalIconImageSource, Path=Source, Converter={StaticResource NotNullToVisibility}, ConverterParameter=Invert}"/>
                                         </Grid>
                                         <TextBlock Text="{Binding Device.Name}" FontWeight="SemiBold"/>
                                     </StackPanel>
@@ -76,7 +132,7 @@
                 </ItemsControl>
             </ScrollViewer>
 
-            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Hozzáadás"
                         Width="120"
                         Style="{StaticResource GlassActionButton}"

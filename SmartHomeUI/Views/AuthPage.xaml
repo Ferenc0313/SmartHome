@@ -22,6 +22,8 @@
                     <Button Content="Login" Command="{Binding LoginCommand}" Style="{StaticResource GlassActionButton}" Width="140"/>
                 </StackPanel>
 
+                <TextBlock Text="{Binding LoginStatusMessage}" Margin="0,12,0,0" Foreground="{StaticResource NeonCyan}"/>
+
                 <TextBlock Margin="0,12,0,0" Foreground="{StaticResource TextDimmed}">
                     <Run Text="No account? "/>
                     <Hyperlink Click="OpenRegister_Click">
@@ -57,7 +59,7 @@
                     <Button Content="Cancel" Style="{StaticResource GlassActionButton}" Width="120" Margin="10,0,0,0" Click="CancelRegister_Click"/>
                 </StackPanel>
 
-                <TextBlock Text="{Binding StatusMessage}" Margin="0,14,0,0" Foreground="{StaticResource NeonCyan}"/>
+                <TextBlock Text="{Binding RegisterStatusMessage}" Margin="0,14,0,0" Foreground="{StaticResource NeonCyan}"/>
             </StackPanel>
         </Border>
 

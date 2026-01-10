@@ -7,6 +7,7 @@
              xmlns:vm="clr-namespace:SmartHomeUI.ViewModels"
              xmlns:co="clr-namespace:SmartHomeUI.Presentation.Views"
              xmlns:cosafety="clr-namespace:SmartHomeUI.Presentation.ViewModels"
+             xmlns:irrigation="clr-namespace:SmartHomeUI.Presentation.Views"
              mc:Ignorable="d"
              d:DesignHeight="900" d:DesignWidth="1400">
 
@@ -15,6 +16,8 @@
         <conv:IconKeyToImageSourceConverter x:Key="IconKeyToImageSource"/>
         <conv:BoolToTextOnOffConverter x:Key="BoolToTextOnOff"/>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        <conv:NotNullToVisibilityConverter x:Key="NotNullToVisibility"/>
+        <conv:ImageSourceAndTypeToVisibilityConverter x:Key="ImageSourceAndTypeToVisibility"/>
 
         <Style x:Key="AddWidgetCircleButton" TargetType="Button">
             <Setter Property="Width" Value="72"/>
@@ -153,13 +156,14 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*"/>
-            <ColumnDefinition Width="1.2*"/>
+            <ColumnDefinition Width="2.4*"/>
+            <ColumnDefinition Width="1.6*"/>
         </Grid.ColumnDefinitions>
 
         <!-- LEFT: Devices -->
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
@@ -167,7 +171,9 @@
             <co:CoSafetyPanel Grid.Row="0" Margin="10,10,10,6"
                                Visibility="{Binding CoSafetyAvailable, Converter={StaticResource BoolToVisibility}}"/>
 
-            <Border Grid.Row="1" Style="{StaticResource GlassPanel}" Margin="10,0,10,10" Padding="16">
+            <irrigation:IrrigationPanel Grid.Row="1" Margin="10,0,10,8"/>
+
+            <Border Grid.Row="2" Style="{StaticResource GlassPanel}" Margin="10,0,10,10" Padding="16">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -189,7 +195,8 @@
                         <TextBlock Text="{Binding LowBatteryCount}"/>
                     </StackPanel>
 
-                    <ScrollViewer Grid.Row="2"
+                    <ScrollViewer x:Name="DevicesScroll"
+                                  Grid.Row="2"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled"
                                   Loaded="DeviceListScroll_Loaded"
@@ -224,7 +231,7 @@
                                 </Setter>
                             </Style>
                         </ScrollViewer.Resources>
-                        <ItemsControl ItemsSource="{Binding Devices}">
+                        <ItemsControl ItemsSource="{Binding DevicesView}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel />
@@ -391,11 +398,17 @@
                                                              HorizontalAlignment="Center"
                                                              VerticalAlignment="Center">
                                                         <Grid>
+                                                            <Image x:Name="TileIconImageSource"
+                                                                   Width="52"
+                                                                   Height="52"
+                                                                   Visibility="Collapsed"
+                                                                   Source="{Binding IconKey, Converter={StaticResource IconKeyToImageSource}}"/>
                                                             <Image x:Name="TileIconImage"
                                                                    Width="52"
                                                                    Height="52"
                                                                    Stretch="Uniform"
-                                                                   Source="{Binding IconKey, Converter={StaticResource IconKeyToImageSource}}">
+                                                                   Source="{Binding ElementName=TileIconImageSource, Path=Source}"
+                                                                   Visibility="Collapsed">
                                                                 <Image.Style>
                                                                     <Style TargetType="Image">
                                                                         <Setter Property="Visibility" Value="Visible"/>
@@ -407,6 +420,22 @@
                                                                     </Style>
                                                                 </Image.Style>
                                                             </Image>
+                                                            <Border x:Name="TileIconMask"
+                                                                    Width="52"
+                                                                    Height="52"
+                                                                    Background="{StaticResource NeonCyan}"
+                                                                    >
+                                                                <Border.OpacityMask>
+                                                                    <ImageBrush ImageSource="{Binding ElementName=TileIconImageSource, Path=Source}"
+                                                                                Stretch="Uniform"/>
+                                                                </Border.OpacityMask>
+                                                                <Border.Visibility>
+                                                                    <MultiBinding Converter="{StaticResource ImageSourceAndTypeToVisibility}">
+                                                                        <Binding ElementName="TileIconImageSource" Path="Source"/>
+                                                                        <Binding Path="Type"/>
+                                                                    </MultiBinding>
+                                                                </Border.Visibility>
+                                                            </Border>
                                                             <Border x:Name="DoorIconMaskOpen"
                                                                     Width="52"
                                                                     Height="52"
@@ -433,16 +462,12 @@
                                                                        Foreground="{StaticResource NeonCyan}"
                                                                        HorizontalAlignment="Center"
                                                                        VerticalAlignment="Center">
-                                                                <TextBlock.Style>
-                                                                    <Style TargetType="TextBlock">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding Source, ElementName=TileIconImage}" Value="{x:Null}">
-                                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </TextBlock.Style>
+                                                                <TextBlock.Visibility>
+                                                                    <MultiBinding Converter="{StaticResource ImageSourceAndTypeToVisibility}" ConverterParameter="Invert">
+                                                                        <Binding ElementName="TileIconImageSource" Path="Source"/>
+                                                                        <Binding Path="Type"/>
+                                                                    </MultiBinding>
+                                                                </TextBlock.Visibility>
                                                             </TextBlock>
                                                         </Grid>
                                                     </Viewbox>
@@ -583,8 +608,26 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Text="Activity" Foreground="{StaticResource NeonCyan}" FontSize="18" FontWeight="Bold"/>
-                <ListView Grid.Row="1" Background="Transparent" BorderThickness="0" Margin="0,8,0,0" ItemsSource="{Binding Activity}">
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Activity" Foreground="{StaticResource NeonCyan}" FontSize="18" FontWeight="Bold"/>
+                    <Button Grid.Column="1"
+                            Content="Clear"
+                            Style="{StaticResource GlassActionButton}"
+                            Width="90"
+                            Height="28"
+                            Margin="8,0,0,0"
+                            Click="ClearActivity_Click"/>
+                </Grid>
+                <ListView Grid.Row="1"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Margin="0,8,0,0"
+                          ItemsSource="{Binding Activity}"
+                          HorizontalContentAlignment="Stretch">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="Background" Value="Transparent"/>

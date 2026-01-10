@@ -4,96 +4,224 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:devices="clr-namespace:SmartHomeUI.Domain.Devices"
+             xmlns:behaviors="clr-namespace:SmartHomeUI.Presentation.Behaviors"
              mc:Ignorable="d"
              d:DesignHeight="320"
              d:DesignWidth="1200">
-    <Border Style="{StaticResource GlassPanel}" Padding="16">
-        <StackPanel>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="CO Safety Automation"
-                           Foreground="{StaticResource NeonCyan}"
-                           FontSize="18"
-                           FontWeight="Bold"/>
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
-                <TextBlock Text="Virtual CO level" VerticalAlignment="Center" />
-                <Slider Minimum="0"
-                        Maximum="100"
-                        Width="320"
-                        Margin="12,0,0,0"
-                        Value="{Binding CoLevel, UpdateSourceTrigger=PropertyChanged}"
-                        TickFrequency="10"
-                        IsSnapToTickEnabled="False"/>
-                <TextBlock Text="{Binding CoLevel, StringFormat={}{0:F0} ppm}"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource NeonCyan}"
-                           VerticalAlignment="Center"
-                           Margin="12,0,0,0"/>
-            </StackPanel>
-
-            <Grid Margin="0,8,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="CO Sensor" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
-                    <TextBlock Text="{Binding SensorStateText}"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               Margin="0,4,0,0">
+    <Border Style="{StaticResource GlassPanel}" Padding="16" Background="#101922">
+        <Expander behaviors:PersistedExpander.Key="CoSafetyPanel"
+                  behaviors:PersistedExpander.DefaultExpanded="True"
+                  Background="Transparent"
+                  BorderThickness="0">
+            <Expander.Header>
+                <DockPanel>
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                        <Border Width="6"
+                                Height="32"
+                                CornerRadius="4"
+                                Background="{StaticResource NeonCyan}"
+                                Opacity="0.7"/>
+                        <StackPanel Margin="12,0,0,0">
+                            <TextBlock Text="CO Safety Automation"
+                                       Foreground="{StaticResource NeonCyan}"
+                                       FontSize="18"
+                                       FontWeight="Bold"/>
+                            <TextBlock Text="Realtime snapshot of the CO safety MCU"
+                                       Foreground="{StaticResource TextDimmed}"
+                                       FontSize="12"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" Margin="0,0,6,0">
+                        <Ellipse Width="14" Height="14" Margin="0,0,10,0">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="#24D37F"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsReady}" Value="False">
+                                            <Setter Property="Fill" Value="#5A6570"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                            <Ellipse.ToolTip>
+                                <TextBlock Text="Online">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsReady}" Value="False">
+                                                    <Setter Property="Text" Value="Offline"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Ellipse.ToolTip>
+                        </Ellipse>
+                        <TextBlock x:Name="CoChevron"
+                                   Text="▼"
+                                   Foreground="{StaticResource NeonCyan}"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="▼"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=Expander}}" Value="False">
+                                            <Setter Property="Text" Value="▲"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </DockPanel>
+            </Expander.Header>
+            <Expander.Content>
+                <StackPanel>
+                    <TextBlock Text="{Binding Status}"
+                               Foreground="{StaticResource NeonMagenta}"
+                               Margin="0,6,0,0"
+                               FontSize="12">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="{StaticResource TextDimmed}"/>
+                                <Setter Property="Visibility" Value="Collapsed"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding SensorState}" Value="{x:Static devices:CoState.Normal}">
-                                        <Setter Property="Foreground" Value="#88FFFFFF"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding SensorState}" Value="{x:Static devices:CoState.Warning}">
-                                        <Setter Property="Foreground" Value="{StaticResource NeonMagenta}"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding SensorState}" Value="{x:Static devices:CoState.Critical}">
-                                        <Setter Property="Foreground" Value="{StaticResource NeonCyan}"/>
+                                    <DataTrigger Binding="{Binding IsReady}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                </StackPanel>
 
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="CO Detector" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
-                    <TextBlock Text="{Binding DetectorStatus}"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               Margin="0,4,0,0">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="{StaticResource TextDimmed}"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsDetectorActive}" Value="True">
-                                        <Setter Property="Foreground" Value="{StaticResource NeonCyan}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
+                        <TextBlock Text="Virtual CO level" VerticalAlignment="Center" />
+                        <Slider Minimum="0"
+                                Maximum="100"
+                                Width="320"
+                                Margin="12,0,0,0"
+                                Value="{Binding CoLevel, UpdateSourceTrigger=PropertyChanged}"
+                                TickFrequency="10"
+                                IsSnapToTickEnabled="False"
+                                IsEnabled="{Binding IsReady}"/>
+                        <TextBlock Text="{Binding CoLevel, StringFormat={}{0:F0} ppm}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource NeonCyan}"
+                                   VerticalAlignment="Center"
+                                   Margin="12,0,0,0"/>
+                    </StackPanel>
 
-                <StackPanel Grid.Column="2">
-                    <TextBlock Text="SmartDoor" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
-                    <TextBlock Margin="0,4,0,0">
-                        <Run Text="{Binding DoorStateText, Mode=OneWay}"/>
-                        <Run Text=" | "/>
-                        <Run Text="{Binding DoorLockStateText, Mode=OneWay}"/>
-                        <Run Text=" | "/>
-                        <Run Text="{Binding DoorModeText, Mode=OneWay}"/>
-                    </TextBlock>
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="CO Sensor" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
+                            <TextBlock Text="{Binding SensorStateText}"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,4,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource TextDimmed}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SensorState}" Value="{x:Static devices:CoState.Normal}">
+                                                <Setter Property="Foreground" Value="#88FFFFFF"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding SensorState}" Value="{x:Static devices:CoState.Warning}">
+                                                <Setter Property="Foreground" Value="{StaticResource NeonMagenta}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding SensorState}" Value="{x:Static devices:CoState.Critical}">
+                                                <Setter Property="Foreground" Value="{StaticResource NeonCyan}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="CO Detector" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
+                            <TextBlock Text="{Binding DetectorStatus}"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Margin="0,4,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource TextDimmed}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDetectorActive}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource NeonCyan}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="SmartDoor" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
+                            <TextBlock Margin="0,4,0,0">
+                                <Run Text="{Binding DoorStateText, Mode=OneWay}"/>
+                                <Run Text=" | "/>
+                                <Run Text="{Binding DoorLockStateText, Mode=OneWay}"/>
+                                <Run Text=" | "/>
+                                <Run Text="{Binding DoorModeText, Mode=OneWay}"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
-            </Grid>
-        </StackPanel>
+            </Expander.Content>
+            <Expander.Style>
+                <Style TargetType="Expander">
+                    <Setter Property="Foreground" Value="{StaticResource TextWhite}"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Expander">
+                                <DockPanel>
+                                    <ToggleButton x:Name="HeaderSite"
+                                                  Content="{TemplateBinding Header}"
+                                                  IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                                  Foreground="{TemplateBinding Foreground}"
+                                                  FontSize="{TemplateBinding FontSize}"
+                                                  FontWeight="{TemplateBinding FontWeight}"
+                                                  Background="Transparent"
+                                                  BorderThickness="0"
+                                                  Padding="0"
+                                                  HorizontalContentAlignment="Stretch"
+                                                  OverridesDefaultStyle="True">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <ContentPresenter ContentSource="Content"
+                                                                  HorizontalAlignment="Stretch"
+                                                                  VerticalAlignment="Center"/>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                    <ContentPresenter x:Name="ContentSite"
+                                                      DockPanel.Dock="Bottom"
+                                                      Focusable="False"
+                                                      Visibility="Collapsed"
+                                                      ContentSource="Content"/>
+                                </DockPanel>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsExpanded" Value="True">
+                                        <Setter TargetName="ContentSite" Property="Visibility" Value="Visible"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Expander.Style>
+        </Expander>
     </Border>
 </UserControl>

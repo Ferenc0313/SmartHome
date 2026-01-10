@@ -9,6 +9,7 @@
                 <ResourceDictionary Source="Themes/NeonTheme.xaml"/>
                 <ResourceDictionary Source="Themes/NeonSlider.xaml"/>
                 <ResourceDictionary Source="Themes/NeonComboBox.xaml"/>
+                <ResourceDictionary Source="Themes/DialogTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

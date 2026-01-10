@@ -9,6 +9,7 @@
     <UserControl.Resources>
         <conv:IconKeyToGlyphConverter x:Key="IconKeyToGlyph"/>
         <conv:IconKeyToImageSourceConverter x:Key="IconKeyToImageSource"/>
+        <conv:NotNullToVisibilityConverter x:Key="NotNullToVisibility"/>
     </UserControl.Resources>
 
     <Border Style="{StaticResource GlassPanel}" Margin="10" Padding="20">
@@ -29,8 +30,8 @@
                     <ColumnDefinition Width="16"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="Add Device" Width="140" Style="{StaticResource GlassActionButton}" Click="AddDevice_Click"/>
-                <Button Grid.Column="1" Content="Add Physical" Width="140" Margin="10,0,0,0" Style="{StaticResource GlassActionButton}" Click="AddPhysical_Click"/>
+                <Button Grid.Column="0" Content="Add Virtual Device" Width="140" Style="{StaticResource GlassActionButton}" Click="AddDevice_Click"/>
+                <Button Grid.Column="1" Content="Add Physical Device" Width="140" Margin="10,0,0,0" Style="{StaticResource GlassActionButton}" Click="AddPhysical_Click"/>
                 <TextBox Grid.Column="3" x:Name="SearchBox" Style="{StaticResource GlassTextBox}" ToolTip="Search by name" TextChanged="SearchBox_TextChanged"/>
             </Grid>
 
@@ -49,42 +50,31 @@
                                     <ColumnDefinition Width="40"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid Grid.Column="0" Width="32" HorizontalAlignment="Center">
-                                    <Image x:Name="DeviceIconImage"
+                                    <Image x:Name="DeviceIconImageSource"
                                            Width="24"
                                            Height="24"
-                                           Stretch="Uniform"
-                                           VerticalAlignment="Center"
-                                           Source="{Binding IconKey, Converter={StaticResource IconKeyToImageSource}}">
-                                        <Image.Style>
-                                            <Style TargetType="Image">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                                <Style.Triggers>
-                                                    <Trigger Property="Source" Value="{x:Null}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                    </Trigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Image.Style>
-                                    </Image>
+                                           Visibility="Collapsed"
+                                           Source="{Binding DisplayIconKey, Converter={StaticResource IconKeyToImageSource}}"/>
+                                    <Border x:Name="DeviceIconMask"
+                                            Width="24"
+                                            Height="24"
+                                            Background="{StaticResource NeonCyan}"
+                                            Visibility="{Binding ElementName=DeviceIconImageSource, Path=Source, Converter={StaticResource NotNullToVisibility}}">
+                                        <Border.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding ElementName=DeviceIconImageSource, Path=Source}"
+                                                        Stretch="Uniform"/>
+                                        </Border.OpacityMask>
+                                    </Border>
                                     <TextBlock x:Name="DeviceIconGlyph"
-                                               Text="{Binding IconKey, Converter={StaticResource IconKeyToGlyph}}"
+                                               Text="{Binding DisplayIconKey, Converter={StaticResource IconKeyToGlyph}}"
                                                FontFamily="Segoe MDL2 Assets"
                                                FontSize="20"
                                                Foreground="{StaticResource NeonCyan}"
-                                               VerticalAlignment="Center">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Source, ElementName=DeviceIconImage}" Value="{x:Null}">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                                               VerticalAlignment="Center"
+                                               Visibility="{Binding ElementName=DeviceIconImageSource, Path=Source, Converter={StaticResource NotNullToVisibility}, ConverterParameter=Invert}"/>
                                 </Grid>
                                 <StackPanel Grid.Column="1">
                                     <TextBlock Text="{Binding Name}"/>
@@ -94,14 +84,38 @@
                                         <TextBlock Text="{Binding Room}" Foreground="{StaticResource TextDimmed}" FontSize="12"/>
                                     </StackPanel>
                                 </StackPanel>
-                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Grid.Column="2"
+                                         Width="14"
+                                         Height="14"
+                                         VerticalAlignment="Center"
+                                         Margin="10,0,10,0">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="#5A6570"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsOn}" Value="True">
+                                                    <Setter Property="Fill" Value="#24D37F"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                    <Ellipse.ToolTip>
+                                        <TextBlock Text="Offline">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsOn}" Value="True">
+                                                            <Setter Property="Text" Value="Online"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Ellipse.ToolTip>
+                                </Ellipse>
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Content="Toggle" Style="{StaticResource GlassActionButton}" Tag="{Binding}" Click="Toggle_Click" Padding="10,2"/>
                                 </StackPanel>
-                                <Grid.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Delete" Tag="{Binding}" Click="Delete_Click"/>
-                                    </ContextMenu>
-                                </Grid.ContextMenu>
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -112,7 +126,7 @@
                                     <ControlTemplate TargetType="ListView">
                                         <Grid>
                                             <ItemsPresenter/>
-                                            <TextBlock Text="No devices yet. Click 'Add Device' to create one." Foreground="{StaticResource TextDimmed}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Hidden" x:Name="EmptyHint"/>
+                                            <TextBlock Text="No devices yet. Click 'Add Virtual Device' to create one." Foreground="{StaticResource TextDimmed}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Hidden" x:Name="EmptyHint"/>
                                         </Grid>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="HasItems" Value="False">
@@ -161,6 +175,27 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                             <Button Content="Save" Width="120" Style="{StaticResource GlassActionButton}" Click="SaveDetails_Click"/>
+                            <Button Content="Delete" Width="120" Margin="10,0,0,0" Style="{StaticResource GlassActionButton}" Click="DeleteSelected_Click"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button x:Name="ConfigureMcuButton"
+                                    Content="Configure MCU"
+                                    Width="140"
+                                    Click="ConfigureMcu_Click">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource GlassActionButton}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ElementName=List, Path=SelectedItem.Type}" Value="SprinklerMcu">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ElementName=List, Path=SelectedItem.Type}" Value="CoSafetyMcu">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -168,10 +203,3 @@
         </Grid>
     </Border>
 </UserControl>
-
-
-
-
-
-
-

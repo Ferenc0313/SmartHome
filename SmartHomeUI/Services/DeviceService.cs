@@ -14,6 +14,7 @@ public sealed class ActivityEntry
 {
     public string Time { get; init; } = string.Empty;
     public string Message { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }
 
 public sealed class WidgetCapabilities
@@ -97,12 +98,13 @@ public sealed class WidgetCapabilities
                     changed = true;
                 }
             }
-            // Normalize SmartDoor icon for virtual devices too
-            if (!string.IsNullOrWhiteSpace(d.Type) && d.Type.Equals("SmartDoor", StringComparison.OrdinalIgnoreCase))
+
+            if (!string.IsNullOrWhiteSpace(d.Type))
             {
-                if (string.IsNullOrWhiteSpace(d.IconKey) || d.IconKey.Equals("E8A7", StringComparison.OrdinalIgnoreCase))
+                var resolved = ResolveIconFromType(d.Type);
+                if (ShouldNormalizeIconKey(d.IconKey, resolved))
                 {
-                    d.IconKey = "Assets/Icons/door.png";
+                    d.IconKey = resolved;
                     changed = true;
                 }
             }
@@ -135,6 +137,8 @@ public sealed class WidgetCapabilities
 
         RaiseOnUI(DevicesChanged);
         RaiseOnUI(StateChanged);
+        IrrigationMcuRuntime.SyncWithDevices();
+        CoSafetyMcuRuntime.SyncWithDevices();
     }
 
     public static void Clear()
@@ -148,6 +152,8 @@ public sealed class WidgetCapabilities
         _activity.Clear();
         RaiseOnUI(DevicesChanged);
         RaiseOnUI(StateChanged);
+        IrrigationMcuRuntime.Stop();
+        CoSafetyMcuRuntime.Stop();
     }
 
     public static (int total, int online, int onCount, int lowBattery) GetAggregates()
@@ -187,6 +193,8 @@ public sealed class WidgetCapabilities
             var dev = _devices.FirstOrDefault(d => d.Id == deviceId);
             AddActivity($"{dev?.Name ?? ("Device " + deviceId)} turned {(s.IsOn ? "on" : "off")}");
             RaiseOnUI(StateChanged);
+            CoSafetyMcuRuntime.SyncWithDevices();
+            IrrigationMcuRuntime.SyncWithDevices();
         }
     }
 
@@ -235,6 +243,56 @@ public sealed class WidgetCapabilities
         RefreshDeviceInCollection(deviceId, d => d.IsOn = targetState);
         AddActivity($"{dev.Name} turned {(targetState ? "on" : "off")}");
         RaiseOnUI(StateChanged);
+        // Ensure MCU runtimes react immediately to on/off changes.
+        CoSafetyMcuRuntime.SyncWithDevices();
+        IrrigationMcuRuntime.SyncWithDevices();
+    }
+
+    public static void SetOnOffPersist(int deviceId, bool isOn)
+    {
+        var dev = _devices.FirstOrDefault(d => d.Id == deviceId);
+        if (dev is null) return;
+
+        // Physical device -> SmartThings call
+        if (dev.IsPhysical && !string.IsNullOrWhiteSpace(dev.PhysicalDeviceId))
+        {
+            var pat = NormalizePat(AuthService.CurrentSmartThingsPat ?? Environment.GetEnvironmentVariable("SMARTTHINGS_PAT"));
+            if (string.IsNullOrWhiteSpace(pat))
+            {
+                AddActivity("SmartThings token missing. Cannot toggle physical device.");
+                return;
+            }
+
+            var ok = SmartThingsSwitchService.SetSwitchState(pat, dev.PhysicalDeviceId, isOn);
+            if (!ok)
+            {
+                AddActivity($"SmartThings toggle failed for {dev.Name}.");
+                return;
+            }
+        }
+
+        if (_state.TryGetValue(deviceId, out var s))
+        {
+            s.IsOn = isOn;
+            s.LastSeen = DateTime.UtcNow;
+        }
+
+        using (var db = new SmartHomeDbContext())
+        {
+            var tracked = db.Devices.FirstOrDefault(d => d.Id == deviceId);
+            if (tracked is not null)
+            {
+                tracked.IsOn = isOn;
+                tracked.LastSeen = DateTime.UtcNow;
+                db.SaveChanges();
+            }
+        }
+
+        RefreshDeviceInCollection(deviceId, d => d.IsOn = isOn);
+        AddActivity($"{dev.Name} turned {(isOn ? "on" : "off")}");
+        RaiseOnUI(StateChanged);
+        CoSafetyMcuRuntime.SyncWithDevices();
+        IrrigationMcuRuntime.SyncWithDevices();
     }
 
     public static string NormalizePat(string? pat)
@@ -266,6 +324,9 @@ public sealed class WidgetCapabilities
         RefreshDeviceInCollection(deviceId, d => d.Value = value);
         AddActivity($"{dev?.Name ?? ("Device " + deviceId)} value set to {value:0}");
         RaiseOnUI(StateChanged);
+        // Some automations/MCUs depend on device readings.
+        CoSafetyMcuRuntime.SyncWithDevices();
+        IrrigationMcuRuntime.SyncWithDevices();
     }
 
     private static void AddActivity(string message)
@@ -277,12 +338,24 @@ public sealed class WidgetCapabilities
         _lastActivityKey = key;
         RunOnUI(() =>
         {
-            _activity.Insert(0, new ActivityEntry { Time = time, Message = message });
+            _activity.Insert(0, new ActivityEntry { Time = time, Message = message, CreatedAt = DateTime.UtcNow });
             while (_activity.Count > 30) _activity.RemoveAt(_activity.Count - 1);
+            // Drop entries older than 24h to limit retention
+            var cutoff = DateTime.UtcNow.AddHours(-24);
+            for (int i = _activity.Count - 1; i >= 0; i--)
+            {
+                if (_activity[i].CreatedAt < cutoff) _activity.RemoveAt(i);
+            }
         });
     }
 
     public static void AddActivityMessage(string message) => AddActivity(message);
+
+    public static void ClearActivity()
+    {
+        _lastActivityKey = null;
+        RunOnUI(() => _activity.Clear());
+    }
 
     private static void RaiseOnUI(Action? action) => RunOnUI(() => action?.Invoke());
 
@@ -365,10 +438,64 @@ public sealed class WidgetCapabilities
     private static string ResolveIconFromType(string? type)
     {
         if (string.IsNullOrWhiteSpace(type)) return "E80F";
-        return type.Equals("SmartPlug", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Smart_Plug.png"
-             : type.Equals("SmartBulb", StringComparison.OrdinalIgnoreCase) ? "E7F8"
-             : type.Equals("SmartDoor", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/door.png"
+        return type.Equals("SmartPlug", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Smart_Plugg.png"
+             : type.Equals("Plug", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Smart_Plugg.png"
+             : type.Equals("SmartBulb", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Smart_Bulb.png"
+             : type.Equals("Light", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Smart_Bulb.png"
+             : type.Equals("Lock", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Smart_Lock.png"
+             : type.Equals("Thermostat", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Thermostat.png"
+             : type.Equals("Weather", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Weather_Station.png"
+             : type.Equals("Alarm", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Smoke_Alarm.png"
+             : type.Equals("SensorMotion", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Motion_Sensor.png"
+             : type.Equals("CoSensor", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/CO_Sensor.png"
+             : type.Equals("CoDetector", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/CO_Detector.png"
+             : type.Equals("SmartDoor", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/closed-door-with-border-silhouette.png"
+             : type.Equals("SprinklerMcu", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/MCU.png"
+             : type.Equals("CoSafetyMcu", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/MCU.png"
+             : type.Equals("SoilMoistureSensor", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Soil_Sensor.png"
+             : type.Equals("RainSensor", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Rain_Sensor.png"
+             : type.Equals("TempSensor", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Temperature_Sensor.png"
+             : type.Equals("SprinklerValve", StringComparison.OrdinalIgnoreCase) ? "Assets/Icons/Sprinkler.png"
+             : type.Equals("Camera", StringComparison.OrdinalIgnoreCase) ? "E722"
+             : type.Equals("Speaker", StringComparison.OrdinalIgnoreCase) ? "E767"
+             : type.Equals("TV", StringComparison.OrdinalIgnoreCase) ? "E7F4"
              : "E80F";
+    }
+
+    private static bool ShouldNormalizeIconKey(string? current, string resolved)
+    {
+        if (string.IsNullOrWhiteSpace(resolved)) return false;
+        if (string.IsNullOrWhiteSpace(current)) return true;
+
+        // If we now have a custom image for this type, migrate legacy glyph keys to it.
+        if (LooksLikeGlyphKey(current) && LooksLikeImagePath(resolved)) return true;
+
+        // If this device used an older/alternate image key, normalize to the new one.
+        if (LooksLikeImagePath(current) && LooksLikeImagePath(resolved) && !current.Equals(resolved, StringComparison.OrdinalIgnoreCase))
+        {
+            // Keep icons consistent for built-in assets.
+            if (resolved.StartsWith("Assets/Icons/", StringComparison.OrdinalIgnoreCase)) return true;
+        }
+
+        return false;
+    }
+
+    private static bool LooksLikeGlyphKey(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return false;
+        if (s.Length != 4) return false;
+        return int.TryParse(s, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out _);
+    }
+
+    private static bool LooksLikeImagePath(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return false;
+        return s.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+               || s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+               || s.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+               || s.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase)
+               || s.Contains('/', StringComparison.Ordinal)
+               || s.Contains("\\", StringComparison.Ordinal);
     }
 
     public static void UpdateStateFromExternal(int deviceId, bool isOn)
@@ -392,13 +519,23 @@ public sealed class WidgetCapabilities
             }
         }
 
-        RefreshDeviceInCollection(deviceId, d =>
-        {
-            d.IsOn = isOn;
-            d.LastSeen = DateTime.UtcNow;
-        });
+            RefreshDeviceInCollection(deviceId, d =>
+            {
+                d.IsOn = isOn;
+                d.LastSeen = DateTime.UtcNow;
+            });
 
-        AddActivity($"{_devices.FirstOrDefault(d => d.Id == deviceId)?.Name ?? ("Device " + deviceId)} state synced to {(isOn ? "on" : "off")} (poll)");
-        RaiseOnUI(StateChanged);
+            AddActivity($"{_devices.FirstOrDefault(d => d.Id == deviceId)?.Name ?? ("Device " + deviceId)} state synced to {(isOn ? "on" : "off")} (poll)");
+            RaiseOnUI(StateChanged);
+            CoSafetyMcuRuntime.SyncWithDevices();
+            IrrigationMcuRuntime.SyncWithDevices();
+        }
+
+    public static bool IsDeviceTypeOn(string type)
+    {
+        var dev = _devices.FirstOrDefault(d => d.Type.Equals(type, StringComparison.OrdinalIgnoreCase));
+        if (dev is null) return false;
+        return _state.TryGetValue(dev.Id, out var st) && st.IsOn;
     }
+
 }

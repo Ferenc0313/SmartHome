@@ -10,7 +10,8 @@ namespace SmartHomeUI.Presentation.ViewModels;
 
 public class CoSafetyViewModel : INotifyPropertyChanged
 {
-    private readonly CoSafetyMcuController _controller;
+    private readonly ObservableCollection<LogEntry> _fallbackLogs = new();
+    private CoSafetyMcuController? _controller;
 
     private double _coLevel;
     private CoState _sensorState;
@@ -18,29 +19,27 @@ public class CoSafetyViewModel : INotifyPropertyChanged
     private bool _doorOpen;
     private bool _doorLocked;
     private DoorMode _doorMode;
+    private bool _isReady;
+    private string _status = "Waiting for devices.";
 
     public CoSafetyViewModel()
     {
-        _controller = new CoSafetyMcuController();
+        AttachController(CoSafetyMcuRuntime.Controller);
 
-        _coLevel = _controller.Environment.CoLevel;
-        _sensorState = _controller.Sensor.State;
-        _detectorActive = _controller.Detector.IsActive;
-        _doorOpen = _controller.Door.IsOpen;
-        _doorLocked = _controller.Door.IsLocked;
-        _doorMode = _controller.Door.Mode;
-        CoSafetyUiState.Instance.SensorState = _sensorState;
-        CoSafetyUiState.Instance.DetectorActive = _detectorActive;
-        CoSafetyUiState.Instance.DoorEmergency = _doorMode == DoorMode.EmergencyOverride;
+        CoSafetyMcuRuntime.SnapshotUpdated += (_, snap) => ApplySnapshot(snap);
+        CoSafetyMcuRuntime.ReadinessChanged += (_, ready) => IsReady = ready;
+        CoSafetyMcuRuntime.StatusChanged += (_, status) => Status = status;
 
-        _controller.CoLevelChanged += (_, level) => UpdateCoLevel(level);
-        _controller.CoStateChanged += (_, state) => UpdateSensorState(state);
-        _controller.DetectorStateChanged += (_, isActive) => UpdateDetector(isActive);
-        _controller.DoorStateChanged += (_, _) => RefreshDoorState();
-        _controller.ImportantEvent += (_, message) => DeviceService.AddActivityMessage(message);
+        IsReady = CoSafetyMcuRuntime.IsReady;
+        Status = CoSafetyMcuRuntime.LastStatus;
+
+        if (CoSafetyMcuRuntime.LastSnapshot is CoSafetySnapshot snap)
+        {
+            ApplySnapshot(snap);
+        }
     }
 
-    public ObservableCollection<LogEntry> LogEntries => _controller.LogEntries;
+    public ObservableCollection<LogEntry> LogEntries => _controller?.LogEntries ?? _fallbackLogs;
 
     public double CoLevel
     {
@@ -51,7 +50,7 @@ public class CoSafetyViewModel : INotifyPropertyChanged
             if (Math.Abs(clamped - _coLevel) < 0.0001) return;
             _coLevel = clamped;
             OnPropertyChanged();
-            _controller.SetCoLevel(clamped);
+            _controller?.SetCoLevel(clamped);
         }
     }
 
@@ -121,6 +120,32 @@ public class CoSafetyViewModel : INotifyPropertyChanged
     public string DoorStateText => IsDoorOpen ? "Open" : "Closed";
     public string DoorLockStateText => IsDoorLocked ? "Locked" : "Unlocked";
     public string DoorModeText => DoorMode.ToString();
+    public bool IsReady
+    {
+        get => _isReady;
+        private set
+        {
+            if (_isReady == value) return;
+            _isReady = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string Status
+    {
+        get => _status;
+        private set
+        {
+            if (_status == value) return;
+            _status = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private void AttachController(CoSafetyMcuController? controller)
+    {
+        _controller = controller;
+    }
 
     private void UpdateCoLevel(double level)
     {
@@ -145,6 +170,20 @@ public class CoSafetyViewModel : INotifyPropertyChanged
         DoorMode = _controller.Door.Mode;
         CoSafetyUiState.Instance.DoorEmergency = DoorMode == DoorMode.EmergencyOverride;
         DeviceService.SetSmartDoorStateForCoSafety(IsDoorOpen);
+    }
+
+    private void ApplySnapshot(CoSafetySnapshot snap)
+    {
+        _coLevel = snap.CoLevel;
+        OnPropertyChanged(nameof(CoLevel));
+        SensorState = snap.SensorState;
+        IsDetectorActive = snap.DetectorActive;
+        IsDoorOpen = snap.DoorOpen;
+        IsDoorLocked = snap.DoorLocked;
+        DoorMode = snap.DoorMode;
+        CoSafetyUiState.Instance.SensorState = _sensorState;
+        CoSafetyUiState.Instance.DetectorActive = _detectorActive;
+        CoSafetyUiState.Instance.DoorEmergency = _doorMode == DoorMode.EmergencyOverride;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
