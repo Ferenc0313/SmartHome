@@ -4,6 +4,9 @@ SmartHomeHub is a desktop smart home control application developed in C# using W
 
 This project was developed as part of an academic thesis and focuses on architectural design, integration concepts, and system behavior rather than production deployment.
 
+IMPORTANT: The software only works with a regsitered PAT token and only a Tapo P110 Plug can be controlled by the application!
+When a user is registered, it's not a mandatory to use legal PAT, just write something to the input field and the solution have lots of virtual device demonstrated by automations.
+
 ---
 
 ## Features
